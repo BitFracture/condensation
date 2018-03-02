@@ -54,6 +54,10 @@ The Python3 application is deployed to EC2 via Elastic Beanstalk. The configurat
 
 ## Design Diagrams
 
+###Entity Relationship Diagram
+
+![alt text](images/data_layer_hi_rez.png)
+
 ## Scaling
 
 ## Monitoring
