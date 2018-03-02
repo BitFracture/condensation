@@ -1,19 +1,20 @@
 #!/bin/bash
 
-echo "\nCreating virtual environment\n"
-pip3.exe install virtualenv --user
-python3.exe -m venv ./.virtualenv
+printf "\nCreating virtual environment\n\n"
+pip3 install virtualenv --user
+python3 -m venv ./.virtualenv
 
-echo "\nRunning virtual environment\n"
-./.virtualenv/Scripts/activate py35
+printf "\nRunning virtual environment\n\n"
+chmod u+x ./.virtualenv/bin/activate
+source ./.virtualenv/bin/activate py35
 
 cd condensation-forum
 
-echo "Installing prerequisites\n"
+printf "Installing prerequisites\n\n"
 pip3 install -r requirements.txt
-echo "\nRunning application\n"
+printf "\nRunning application\n\n"
 python3 ./application.py
 
 cd ..
 
-call ./.virtualenv/Scripts/deactivate
+deactivate
