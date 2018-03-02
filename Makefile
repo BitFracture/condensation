@@ -1,7 +1,7 @@
 deploy-win:
 	deploy.bat
 deploy:
-	./deploy.sh
+	chmod u+x ./deploy.sh ; ./deploy.sh
 run:
 	chmod u+x ./run.sh ; ./run.sh
 run-win:
