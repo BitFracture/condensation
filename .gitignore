@@ -6,3 +6,4 @@ desktop.ini
 .elasticbeanstalk
 __pycache__
 .virtualenv
+*pycache__
