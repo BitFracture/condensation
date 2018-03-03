@@ -1,10 +1,10 @@
 
 # Set up commands to run
-RUN := chmod u+x ./run.sh ; ./run.sh
-DEPLOY := chmod u+x ./deploy.sh ; ./deploy.sh
+RUN := chmod u+x ./scripts/run.sh ; ./scripts/run.sh
+DEPLOY := chmod u+x ./scripts/deploy.sh ; ./scripts/deploy.sh
 ifeq ($(OS),Windows_NT)
-	RUN := run.bat
-	DEPLOY := deploy.bat
+	RUN := scripts\run.bat
+	DEPLOY := scripts\deploy.bat
 endif
 
 # Do what the user requested
