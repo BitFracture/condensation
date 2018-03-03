@@ -1,5 +1,8 @@
-
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
+._*
+Thumbs.db
+desktop.ini
+.DS_Store
+*.local.json
+.elasticbeanstalk
+__pycache__
+.virtualenv
