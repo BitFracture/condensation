@@ -22,10 +22,10 @@ config = ConfigLoader("config.local.json")
 
 # Set up service handles
 session  = boto3.Session(
-    aws_access_key_id = config.get("accessKey"),
-    aws_secret_access_key = config.get("secretKey"),
+    aws_access_key_id = None,#config.get("accessKey")
+    aws_secret_access_key = None,#config.get("secretKey")
     aws_session_token=None,
-    region_name = config.get("region"),
+    region_name = None,#config.get("region")
     botocore_session=None,
     profile_name=None)
 
