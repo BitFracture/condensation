@@ -18,7 +18,7 @@ import sys
 application = Flask(__name__)
 
 # Set up service handles
-session  = boto3.session.Session()
+session  = boto3.Session()
 """aws_access_key_id="---",
 aws_secret_access_key="---",
 aws_session_token=None,

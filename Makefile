@@ -1,8 +1,14 @@
-deploy-win:
-	deploy.bat
+
+# Set up commands to run
+RUN := chmod u+x ./run.sh ; ./run.sh
+DEPLOY := chmod u+x ./deploy.sh ; ./deploy.sh
+ifeq ($(OS),Windows_NT)
+	RUN := run.bat
+	DEPLOY := deploy.bat
+endif
+
+# Do what the user requested
 deploy:
-	chmod u+x ./deploy.sh ; ./deploy.sh
+	$(DEPLOY)
 run:
-	chmod u+x ./run.sh ; ./run.sh
-run-win:
-	run.bat
+	$(RUN)
