@@ -29,5 +29,6 @@ class Session:
         """Builds a connection string"""
         return "postgresql://%s:%s@%s:5432/postgres" % (user, password, endpoint)
 
+        
 
 
