@@ -6,3 +6,8 @@ desktop.ini
 .elasticbeanstalk
 __pycache__
 .virtualenv
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

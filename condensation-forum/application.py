@@ -45,9 +45,6 @@ def indexGetHandler():
     #homeRendered = homeTemplate.render()
     response = authCacheTable.scan()
     homeRendered = json.dumps(response)
-    homeRendered += "<br/><br/>" + config.get("region") + ", "
-    homeRendered += config.get("accessKey")[:4] + ", "
-    homeRendered += config.get("secretKey")[:4]
     return bodyTemplate.render(body = homeRendered, title = "Test Home")
 
 
