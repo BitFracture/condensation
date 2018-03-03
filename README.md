@@ -30,6 +30,14 @@ The deployed web service lives at `condensation-forum.us-west-2.elasticbeanstalk
 
 ## Running the local server
 
+ - In the `condensation-forum` folder, create a local config file called `config.local.json` ```
+ {
+     "aws": {
+         "accessKey": "KEY_GOES_HERE",
+         "secretKey": "SECRET_GOES_HERE",
+         "region": "us-west-2"
+     }
+ }```
  - If you have GNU Make, use `make run` or `make run-win`
  - If you do not, run `./run.sh` or `run.bat`
  - Note: You may need to `chmod u+x run.sh` before you can run in *nix
