@@ -22,10 +22,10 @@ config = ConfigLoader("config.local.json")
 
 # Set up service handles
 session  = boto3.Session(
-    aws_access_key_id = None,#config.get("accessKey")
-    aws_secret_access_key = None,#config.get("secretKey")
+    aws_access_key_id = config.get("accessKey"),
+    aws_secret_access_key = config.get("secretKey"),
     aws_session_token=None,
-    region_name = None,#config.get("region")
+    region_name = config.get("region"),
     botocore_session=None,
     profile_name=None)
 
@@ -45,6 +45,9 @@ def indexGetHandler():
     #homeRendered = homeTemplate.render()
     response = authCacheTable.scan()
     homeRendered = json.dumps(response)
+    homeRendered += "<br/><br/>" + config.get("region") + ", "
+    homeRendered += config.get("accessKey")[:4] + ", "
+    homeRendered += config.get("secretKey")[:4]
     return bodyTemplate.render(body = homeRendered, title = "Test Home")
 
 
