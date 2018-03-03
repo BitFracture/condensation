@@ -12,24 +12,27 @@ import cgi
 import time
 import random
 import sys
+from configLoader import ConfigLoader
 
 
 # This is the EB application, calling directly into Flask
 application = Flask(__name__)
 
+config = ConfigLoader("config.local.json")
+
 # Set up service handles
-session  = boto3.session.Session(
-        aws_access_key_id="---",
-        aws_secret_access_key="---",
-        aws_session_token=None,
-        region_name="us-west-2",
-        botocore_session=None,
-        profile_name=None)
+session  = boto3.Session(
+    aws_access_key_id = config.get("accessKey"),
+    aws_secret_access_key = config.get("secretKey"),
+    aws_session_token=None,
+    region_name = config.get("region"),
+    botocore_session=None,
+    profile_name=None)
 
 dynamodb = session.resource('dynamodb')
 s3       = session.resource('s3')
 
-# Example: authCacheTable = dynamodb.Table('person-table')
+authCacheTable = dynamodb.Table('person-attribute-table')
 # Example: bucket = s3.Bucket('elasticbeanstalk-us-west-2-3453535353')
 
 
@@ -39,7 +42,9 @@ def indexGetHandler():
     Returns the template "home" wrapped by "body" served as HTML
     """
 
-    homeRendered = homeTemplate.render()
+    #homeRendered = homeTemplate.render()
+    response = authCacheTable.scan()
+    homeRendered = json.dumps(response)
     return bodyTemplate.render(body = homeRendered, title = "Test Home")
 
 

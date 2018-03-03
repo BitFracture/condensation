@@ -26,11 +26,19 @@ The deployed web service lives at `condensation-forum.us-west-2.elasticbeanstalk
     - Choose region `us-west-2` which is Oregon
 	- Do not set up CodeCommit, as we use GitHub and our own deploy script
  - Before deploying, confirm with group members. Run `eb deploy`
- - Quick deployment commands `make deploy` and `make deploy-win` are set up already
+ - Quick deployment command `make deploy` is set up already
 
 ## Running the local server
 
- - If you have GNU Make, use `make run` or `make run-win`
+ - In the `condensation-forum` folder, create a local config file called `config.local.json`<br/>
+```
+{
+    "accessKey": "AAAABBBBCCCCDDDDEEEE",
+    "secretKey": "aaaaaaaabbbbbbbbccccccccddddddddeeeeeeee",
+    "region": "us-west-2"
+}
+```
+ - If you have GNU Make, use `make run`
  - If you do not, run `./run.sh` or `run.bat`
  - Note: You may need to `chmod u+x run.sh` before you can run in *nix
 

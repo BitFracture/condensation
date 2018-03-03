@@ -4,4 +4,5 @@ desktop.ini
 .DS_Store
 *.local.json
 .elasticbeanstalk
+__pycache__
 .virtualenv
