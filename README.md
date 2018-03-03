@@ -35,7 +35,10 @@ The deployed web service lives at `condensation-forum.us-west-2.elasticbeanstalk
 {
     "accessKey": "AAAABBBBCCCCDDDDEEEE",
     "secretKey": "aaaaaaaabbbbbbbbccccccccddddddddeeeeeeee",
-    "region": "us-west-2"
+    "region": "us-west-2",
+    "oauthClientId": "000000000000000000000000000000000000000000000.apps.googleusercontent.com",
+    "oauthClientSecret": "111122223333444455556666",
+    "appSecret": "11aa22bb33cc44dd55ee77hh"
 }
 ```
  - If you have GNU Make, use `make run`

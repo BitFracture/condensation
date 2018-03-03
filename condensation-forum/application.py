@@ -2,7 +2,7 @@
 An AWS Python3+Flask web app.
 """
 
-from flask import Flask, redirect, url_for, request
+from flask import Flask, redirect, url_for, request, session
 from flask_oauthlib.client import OAuth
 import boto3
 import jinja2
@@ -16,10 +16,11 @@ import sys
 from configLoader import ConfigLoader
 
 
+config = ConfigLoader("config.local.json")
+
 # This is the EB application, calling directly into Flask
 application = Flask(__name__)
-
-config = ConfigLoader("config.local.json")
+application.secret_key = config.get("appSecret")
 
 # Set up service handles
 session  = boto3.Session(
@@ -37,14 +38,32 @@ authCacheTable = dynamodb.Table('person-attribute-table')
 # Example: bucket = s3.Bucket('elasticbeanstalk-us-west-2-3453535353')
 
 # OAuth setup
-oauth = OAuth()
+oauth = OAuth(application)
+googleAuth = oauth.remote_app('google',
+        base_url = 'https://www.googleapis.com/oauth2/v1/',
+        authorize_url = 'https://accounts.google.com/o/oauth2/auth',
+        request_token_url = None,
+        request_token_params = {
+                'scope': 'https://www.googleapis.com/auth/userinfo.email'},
+        access_token_url = 'https://accounts.google.com/o/oauth2/token',
+        access_token_method = 'POST',
+        access_token_params = {'grant_type': 'authorization_code'},
+        consumer_key = config.get("oauthClientId"),
+        consumer_secret = config.get("oauthClientSecret"))
 
 
+#@googleAuth.tokengetter
 @application.route('/', methods=['GET'])
 def indexGetHandler():
     """
     Returns the template "home" wrapped by "body" served as HTML
     """
+
+    #access_token = None
+    #if session is not None:
+    #    access_token = session.get('access_token')
+    #if access_token is None:
+    return redirect(url_for('loginHandler'))
 
     #homeRendered = homeTemplate.render()
     response = authCacheTable.scan()
@@ -72,6 +91,25 @@ def authGetHandler():
 
     authRendered = authTemplate.render()
     return bodyTemplate.render(body = authRendered, title = "Google Auth Test")
+
+
+@application.route('/login', methods=['GET'])
+def loginHandler():
+    """
+    Returns the template "testingAuth" wrapped by "body" served as HTML
+    """
+    callback = url_for('authorizedHandler', _external = True)
+    return googleAuth.authorize(callback = callback)
+
+
+@application.route('/authorized', methods=['GET'])
+def authorizedHandler():
+    """
+    Returns the template "home" wrapped by "body" served as HTML
+    """
+
+    homeRendered = "You are authed"
+    return bodyTemplate.render(body = homeRendered, title = "Test Home")
 
 
 # Load up Jinja2 templates
