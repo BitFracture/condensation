@@ -39,8 +39,10 @@ The deployed web service lives at `condensation-forum.us-west-2.elasticbeanstalk
 }
 ```
  - If you have GNU Make, use `make run`
- - If you do not, run `./run.sh` or `run.bat`
- - Note: You may need to `chmod u+x run.sh` before you can run in *nix
+ - If you do not, run `./scripts/run.sh` or `scripts\run.bat`
+ - Note: You may need to `chmod u+x run.sh` before you can run in \*nix
+ - Note: You should run scripts from the Git root, not from inside the scripts folder
+ - Access the site at `http://localhost:5000` or OAuth redirects won't work
 
 # Architecture
 
@@ -62,7 +64,7 @@ The Python3 application is deployed to EC2 via Elastic Beanstalk. The configurat
 
 ## Design Diagrams
 
-###Entity Relationship Diagram
+### Entity Relationship Diagram
 
 ![alt text](images/data_layer_hi_rez.png)
 

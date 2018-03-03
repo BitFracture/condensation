@@ -3,6 +3,7 @@ An AWS Python3+Flask web app.
 """
 
 from flask import Flask, redirect, url_for, request
+from flask_oauthlib.client import OAuth
 import boto3
 import jinja2
 from boto3.dynamodb.conditions import Key, Attr
@@ -35,6 +36,9 @@ s3       = session.resource('s3')
 authCacheTable = dynamodb.Table('person-attribute-table')
 # Example: bucket = s3.Bucket('elasticbeanstalk-us-west-2-3453535353')
 
+# OAuth setup
+oauth = OAuth()
+
 
 @application.route('/', methods=['GET'])
 def indexGetHandler():
@@ -60,12 +64,23 @@ def indexPostHandler():
     return indexGetHandler()
 
 
+@application.route('/google', methods=['GET'])
+def authGetHandler():
+    """
+    Returns the template "testingAuth" wrapped by "body" served as HTML
+    """
+
+    authRendered = authTemplate.render()
+    return bodyTemplate.render(body = authRendered, title = "Google Auth Test")
+
+
 # Load up Jinja2 templates
 templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
 templateEnv = jinja2.Environment(loader=templateLoader)
 
 bodyTemplate = templateEnv.get_template("body.html")
 homeTemplate = templateEnv.get_template("home.html")
+authTemplate = templateEnv.get_template("testingAuth.html")
 
 # Run Flask app now
 if __name__ == "__main__":
