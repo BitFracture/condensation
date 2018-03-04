@@ -62,6 +62,7 @@ def indexGetHandler():
 
 
 @application.route('/', methods=['POST'])
+@authManager.requireAuthentication
 def indexPostHandler():
     """
     Outputs the user's submission to console and returns index GET response.
