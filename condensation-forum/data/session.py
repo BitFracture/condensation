@@ -1,11 +1,12 @@
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 """Abstracts the data layer of the condensation forum.
 
 Classes:
-    Session -- Opens up a lazily evaluating connection to a provided datavase.
+    SessionManager -- Opens up a lazily evaluating connection to a provided datavase.
 """
 
-class Session:
+class SessionManager:
     """Opens up a session with our ORM and executes transactions lazily.
 
     Assumes we are connecting to a postgresql database named postgres, on the
@@ -28,6 +29,15 @@ class Session:
     def _buildConnectionString(self, user, password, endpoint):
         """Builds a connection string"""
         return "postgresql://%s:%s@%s:5432/postgres" % (user, password, endpoint)
+
+    def create(self, entity):
+        session = sessionmaker(bind=self.engine)()
+        session.add(entity)
+        session.commit()
+        
+
+        
+        
 
         
 
