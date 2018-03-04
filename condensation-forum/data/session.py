@@ -48,3 +48,4 @@ class SessionManager:
             session.close()
             
 
+sessionMgr = SessionManager("postgres","password","localhost", debug=True)

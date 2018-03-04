@@ -8,33 +8,51 @@ static methods:
     dropSchema - drops the schema
     populate - populates the database with data
 """
-from session import SessionManager
+from session import SessionManager, sessionMgr
 from schema import Base, User, File
 from sqlalchemy import *
+from sqlalchemy.engine import reflection
+from sqlalchemy.schema import Table, DropTable, DropConstraint
 
-from sqlalchemy.schema import Table, DropTable
 
 
 def declareSchema():
     """Declares the schema."""
-    sessionMgr = SessionManager("postgres","password","localhost", debug=True)
     with sessionMgr.session_scope():
-        Base.metadata.drop_all(bind=sessionMgr.engine)
+        Base.metadata.create_all(bind=sessionMgr.engine)
 
     
 def dropSchema():
     """Drops the schema."""
-    sessionMgr = SessionManager("postgres","password","localhost", debug=True)
 
-    with sessionMgr.session_scope():
-        Base.metadata.drop_all(bind=sessionMgr.engine)
+    # From http://www.sqlalchemy.org/trac/wiki/UsageRecipes/DropEverything
+    inspector = reflection.Inspector.from_engine(sessionMgr.engine)
+    metadata = MetaData()
 
-
+    with sessionMgr.session_scope() as session:
+    
+        tbs = []
+        all_fks = []
+    
+        for table_name in inspector.get_table_names():
+            fks = []
+            for fk in inspector.get_foreign_keys(table_name):
+                if not fk['name']:
+                    continue
+                fks.append( ForeignKeyConstraint((),(),name=fk['name']))
+            t = Table(table_name,metadata,*fks)
+            tbs.append(t)
+            all_fks.extend(fks)
+    
+        for fkc in all_fks:
+            sessionMgr.engine.execute(DropConstraint(fkc))
+    
+        for table in tbs:
+            sessionMgr.engine.execute(DropTable(table))
 
 
 def populate():
     """Populates the database with data."""
-    session = SessionManager("postgres","password","localhost", debug=True)
     certificates = ["109584283992409810224", "109584283922409810234", "109582283992409810234", "209584283992409810234"]
     names = ["Bilbo Baggins", "Gandalf Greyhame", "Merry Took", "Pippin Took"]
     fnames = ["there and back again", "fantastic spells and where to find them", "longbottom leaf, the dank growers guide", "hobbiton sports illustrated, swimsuit edition"]

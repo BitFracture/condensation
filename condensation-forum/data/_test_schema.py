@@ -3,7 +3,7 @@
 
 import unittest, traceback
 from admin import dropSchema, declareSchema
-from session import SessionManager
+from session import SessionManager, sessionMgr
 from query import getUser
 from sqlalchemy.exc import IntegrityError, DataError
 import sqlalchemy
@@ -15,7 +15,6 @@ class SchemaTest(unittest.TestCase):
     def setUp(self):
         dropSchema()
         declareSchema()
-        self.mgr = SessionManager("postgres","password","localhost", debug=True)
 
 
 
@@ -28,27 +27,28 @@ class TestSchemaUser(SchemaTest):
         
         #test certificate attribute
 
-        with self.mgr.session_scope() as session:
-            u = User(certificate="107125912631866552739", name="Bilbo Baggins")
-
-        with self.assertRaises(IntegrityError), self.mgr.session_scope() as session:
+        with sessionMgr.session_scope() as session:
             u = User(certificate="107125912631866552739", name="Bilbo Baggins")
             session.add(u)
 
-        with self.assertRaises(IntegrityError), self.mgr.session_scope() as session:
+        with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
+            u = User(certificate="107125912631866552739", name="Bilbo Baggins")
+            session.add(u)
+
+        with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
             u = User(certificate="10712591263186655273", name="Bilbo Baggins")
             session.add(u)
 
-        with self.assertRaises(DataError), self.mgr.session_scope() as session:
+        with self.assertRaises(DataError), sessionMgr.session_scope() as session:
             u = User(certificate="1071259126318665527399", name="Bilbo Baggins")
             session.add(u)
 
         #test the name attribute
-        with self.assertRaises(DataError), self.mgr.session_scope() as session:
+        with self.assertRaises(DataError), sessionMgr.session_scope() as session:
             u = User(certificate="107125912331866552739", name="my name is verrrrrrrrrrrrryyyyyyyyyyyyy long")
             session.add(u)
 
-        with self.assertRaises(IntegrityError), self.mgr.session_scope() as session:
+        with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
             u = User(certificate="107125912331866552739", name="") 
             session.add(u)
         
@@ -57,35 +57,35 @@ class TestSchemaFile(SchemaTest):
     """Test the file entity"""
     def test_create(self):
         """Test object creation."""
-
-        print("hello")
-
         uid = "107125912631866552739"
 
-        with self.mgr.session_scope() as session:
+        with sessionMgr.session_scope() as session:
             user = User(certificate= uid, name="Bilbo Baggins")
+            print(user.__repr__())
+            session.add(user)
 
-        with self.assertRaises(IntegrityError), self.mgr.session_scope() as session:
+        with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
             user = getUser(session, uid)
             if user:
                 user.uploads.append(File(url="", name="ame"))
 
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
             user = getUser(session, uid)
             if user:
                 user.uploads.append(File(url="ul", name=""))
 
-        with self.mgr.session_scope() as session:
+        with sessionMgr.session_scope() as session:
             user = getUser(session, uid)
+            print(user.__repr__())
             if user:
                 user.uploads.append(File(url="url1", name="name1"))
 
-        with self.mgr.session_scope() as session:
+        with sessionMgr.session_scope() as session:
             user = getUser(session, uid)
             if user:
                 user.uploads.append(File(url="url2", name="name2"))
 
-        with self.mgr.session_scope() as session:
+        with sessionMgr.session_scope() as session:
             user = getUser(session, uid)
             if user:
                 user.uploads.append(File(url="url3", name="name3"))
