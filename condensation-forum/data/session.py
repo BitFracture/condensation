@@ -1,5 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from schema import User
+from contextlib import contextmanager
 """Abstracts the data layer of the condensation forum.
 
 Classes:
@@ -25,20 +27,24 @@ class SessionManager:
                      transactions to stdout
         """
         self.engine = create_engine(self._buildConnectionString(user, password, endpoint), echo = debug)
+        self.sessionFactory = sessionmaker(bind=self.engine)
+
 
     def _buildConnectionString(self, user, password, endpoint):
         """Builds a connection string"""
         return "postgresql://%s:%s@%s:5432/postgres" % (user, password, endpoint)
 
-    def create(self, entity):
-        session = sessionmaker(bind=self.engine)()
-        session.add(entity)
-        session.commit()
-        
-
-        
-        
-
-        
-
+    @contextmanager
+    def session_scope(self):
+        """Provide a transactional scope around a series of operations."""
+        session = self.sessionFactory()
+        try:
+            yield session
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+            
 

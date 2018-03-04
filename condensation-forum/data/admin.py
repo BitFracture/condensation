@@ -10,23 +10,32 @@ static methods:
 """
 from session import SessionManager
 from schema import Base, User, File
+from sqlalchemy import *
 
+from sqlalchemy.schema import Table, DropTable
 
 
 def declareSchema():
     """Declares the schema."""
-    session = SessionManager("postgres","password","localhost", debug=True)
-    Base.metadata.create_all(session.engine)
+    sessionMgr = SessionManager("postgres","password","localhost", debug=True)
+    with sessionMgr.session_scope():
+        Base.metadata.drop_all(bind=sessionMgr.engine)
+
     
 def dropSchema():
     """Drops the schema."""
-    session = SessionManager("postgres","password","localhost", debug=True)
-    Base.metadata.drop_all(session.engine)
+    sessionMgr = SessionManager("postgres","password","localhost", debug=True)
+
+    with sessionMgr.session_scope():
+        Base.metadata.drop_all(bind=sessionMgr.engine)
+
+
+
 
 def populate():
     """Populates the database with data."""
     session = SessionManager("postgres","password","localhost", debug=True)
-    certificates = ["12341234123412341234", "12341234123412341235", "12341234123412341236", "12341234123412341237"]
+    certificates = ["109584283992409810224", "109584283922409810234", "109582283992409810234", "209584283992409810234"]
     names = ["Bilbo Baggins", "Gandalf Greyhame", "Merry Took", "Pippin Took"]
     fnames = ["there and back again", "fantastic spells and where to find them", "longbottom leaf, the dank growers guide", "hobbiton sports illustrated, swimsuit edition"]
     furls = ["www.example.com/1", "www.example.com/2", "www.example.com/3", "www.example.com/4"]

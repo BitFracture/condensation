@@ -6,5 +6,7 @@ Modules:
     - data.schema
         - the database schema
     - data.admin
-        - utilities for managing the database"""
-__all__ = ["session","admin", "schema"]
+        - utilities for managing the database
+    - data.query
+        - the queries for the database"""
+__all__ = ["session","admin", "schema", "query"]
