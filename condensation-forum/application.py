@@ -47,7 +47,7 @@ googleAuth = oauth.remote_app('google',
                 'scope': 'https://www.googleapis.com/auth/userinfo.email'},
         access_token_url = 'https://accounts.google.com/o/oauth2/token',
         access_token_method = 'POST',
-        access_token_params = {'grant_type': 'authorization_code'},
+        access_token_params = None, #{'grant_type': 'authorization_code'}
         consumer_key = config.get("oauthClientId"),
         consumer_secret = config.get("oauthClientSecret"))
 
@@ -108,7 +108,27 @@ def authorizedHandler():
     Returns the template "home" wrapped by "body" served as HTML
     """
 
-    homeRendered = "You are authed"
+    #authCode = request.args.get('code')
+    #code = request.args.get('code')
+    #newToken = googleAuth.handle_oauth2_response()
+    #print(newToken, file=sys.stderr)
+    response = googleAuth.authorized_response()
+    print(json.dumps(response), file=sys.stderr)
+
+    if response is None:
+        return 'Access denied: reason=%s error=%s' % (
+            request.args['error_reason'],
+            request.args['error_description']
+        )
+
+    #session['access_token'] = (response['access_token'], '')
+    me = googleAuth.get('userinfo', token = response['access_token'])
+
+    homeRendered = "You are authed: " + jsonify(me.data)
+
+    #access_token = response['access_token']
+    #session['access_token'] = access_token, ''
+
     return bodyTemplate.render(body = homeRendered, title = "Test Home")
 
 
