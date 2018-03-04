@@ -9,7 +9,7 @@ static methods:
     populate - populates the database with data
 """
 from session import SessionManager, sessionMgr
-from schema import Base, User, File
+from schema import _Base, User, File
 from sqlalchemy import *
 from sqlalchemy.engine import reflection
 from sqlalchemy.schema import Table, DropTable, DropConstraint
@@ -19,7 +19,7 @@ from sqlalchemy.schema import Table, DropTable, DropConstraint
 def declareSchema():
     """Declares the schema."""
     with sessionMgr.session_scope():
-        Base.metadata.create_all(bind=sessionMgr.engine)
+        _Base.metadata.create_all(bind=sessionMgr.engine)
 
     
 def dropSchema():

@@ -4,8 +4,8 @@
 import unittest, traceback
 from admin import dropSchema, declareSchema
 from session import SessionManager, sessionMgr
-from query import getUser
-from sqlalchemy.exc import IntegrityError, DataError
+from query import getUser, getFile
+from sqlalchemy.exc import IntegrityError, DataError, InvalidRequestError
 import sqlalchemy
 from schema import User, File
 
@@ -51,7 +51,39 @@ class TestSchemaUser(SchemaTest):
         with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
             u = User(certificate="107125912331866552739", name="") 
             session.add(u)
-        
+
+    def test_delete(self):
+        """test deletion operations"""
+        uid = "107125912631866552739"
+        n1 = "1"
+        n2 = "2"
+        with self.assertRaises(InvalidRequestError),sessionMgr.session_scope() as session:
+            user = User(certificate=uid, name="Bilbo Baggins")
+            session.delete(user)
+
+
+        with sessionMgr.session_scope() as session:
+            user = User(certificate=uid, name="Bilbo Baggins")
+            user.uploads.append(File(url="url2", name=n1))
+            user.uploads.append(File(url="url3", name=n2))
+            session.add(user)
+
+        name = ""
+        with sessionMgr.session_scope() as session:
+            user = getUser(session, uid)
+            f = user.uploads[0]
+            name = f.name
+            session.delete(user)
+
+        with sessionMgr.session_scope() as session:
+            self.assertIsNone(getUser(session, uid))
+
+        with sessionMgr.session_scope() as session:
+            self.assertIsNone(getFile(session, uid, name))
+
+
+
+
 
 class TestSchemaFile(SchemaTest):
     """Test the file entity"""
@@ -80,6 +112,13 @@ class TestSchemaFile(SchemaTest):
             if user:
                 user.uploads.append(File(url="url1", name="name1"))
 
+        with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
+            user = getUser(session, uid)
+            print(user.__repr__())
+            if user:
+                user.uploads.append(File(url="url2", name="name1"))
+
+
         with sessionMgr.session_scope() as session:
             user = getUser(session, uid)
             if user:
@@ -90,6 +129,52 @@ class TestSchemaFile(SchemaTest):
             if user:
                 user.uploads.append(File(url="url3", name="name3"))
 
+    def test_delete(self):
+        """test deletion operations"""
+        uid = "107125912631866552739"
+        uid2 = "107225912631866552739"
+        n1 = "1"
+        n2 = "2"
+        with self.assertRaises(InvalidRequestError),sessionMgr.session_scope() as session:
+            f = File(user_certificate=uid, name=n1, url ="a")
+            session.delete(f)
+
+
+        with sessionMgr.session_scope() as session:
+            user = User(certificate=uid, name="Bilbo Baggins")
+            user2 = User(certificate=uid2, name="frodo Baggins")
+            user.uploads.append(File(url="url2", name=n1))
+            user.uploads.append(File(url="url3", name=n2))
+            session.add(user)
+            session.add(user2)
+
+        name = ""
+        with sessionMgr.session_scope() as session:
+            user = getUser(session, uid)
+            f = user.uploads[0]
+            name = f.name
+            session.delete(f)
+
+
+        with sessionMgr.session_scope() as session:
+            print("$$$$$$$$$$$$$$$$")
+            for user in session.query(User).all():
+                print("$$$$$$$$$$$", user.__repr__())
+            user = getUser(session, uid)
+            self.assertIsNotNone(user.uploads)
+            for f in user.uploads:
+                session.delete(f)
+
+        with sessionMgr.session_scope() as session:
+            user = getUser(session, uid)
+            self.assertTrue(len(user.uploads) == 0)
+            user2 = getUser(session, uid2)
+            self.assertTrue(len(user2.uploads) == 0)
+
+    
+
+        with sessionMgr.session_scope() as session:
+            self.assertIsNone(getFile(session, uid, name))
 
 
 if __name__ == "__main__":
