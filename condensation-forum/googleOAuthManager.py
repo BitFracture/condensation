@@ -16,6 +16,7 @@ class GoogleOAuthManager(object):
     TOKEN_PARAMS     = {'scope': 'https://www.googleapis.com/auth/userinfo.email'}
     ACCESS_TOKEN_URL = 'https://accounts.google.com/o/oauth2/token'
     LOGIN_ROUTE      = '/login'
+    LOGOUT_ROUTE     = '/logout'
     AUTHORIZED_ROUTE = '/authorized'
 
     # The OAuth client
@@ -41,11 +42,24 @@ class GoogleOAuthManager(object):
                 consumer_key         = clientId,
                 consumer_secret      = clientSecret)
 
+        @flaskApp.route(self.LOGOUT_ROUTE, methods=['GET'])
+        def logoutHandler():
+            """
+            Logs out the user, then redirects them to the specified 'redirect' query string
+            """
+            redirectUrl = request.args.get('redirect', default = "/")
+
+            return redirect(redirectUrl)
+
         @flaskApp.route(self.LOGIN_ROUTE, methods=['GET'])
         def loginHandler():
             """
             Returns the authorization redirect for the user.
             """
+            redirectUrl = request.args.get('redirect', default = None)
+            if redirectUrl != None:
+                session['userRedirect'] = redirectUrl
+
             callback = url_for('authorizedHandler', _external = True)
             return self.googleAuth.authorize(callback = callback)
 
