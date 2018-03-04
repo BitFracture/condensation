@@ -22,6 +22,7 @@ class GoogleOAuthManager(object):
     # The OAuth client
     oath = None
     googleAuth = None
+    autoGenFunctionId = 0
 
     # Cached user properties
     userRetrievalEnabled = False
@@ -48,7 +49,7 @@ class GoogleOAuthManager(object):
             Logs out the user, then redirects them to the specified 'redirect' query string
             """
             redirectUrl = request.args.get('redirect', default = "/")
-
+            session.clear()
             return redirect(redirectUrl)
 
         @flaskApp.route(self.LOGIN_ROUTE, methods=['GET'])
@@ -108,7 +109,7 @@ class GoogleOAuthManager(object):
         authenticated.
         """
         # This function REPLACES the original, and does auth first!
-        def newFunc():
+        def newAuthFunc():
             access_token = session.get('accessToken')
             if access_token is None:
                 session['userRedirect'] = request.url_rule.rule
@@ -122,7 +123,9 @@ class GoogleOAuthManager(object):
                 return toReturn
 
         # Return the auth-enhanced function, which nests the original
-        return newFunc
+        newAuthFunc.__name__ = "__authManagerDecorated_" + str(self.autoGenFunctionId)
+        self.autoGenFunctionId += 1
+        return newAuthFunc
 
     def enableAuthentication(self, func):
         """
@@ -143,6 +146,8 @@ class GoogleOAuthManager(object):
             return toReturn
 
         # Return the auth-enhanced function, which nests the original
+        newFunc.__name__ = "__authManagerDecorated_" + str(self.autoGenFunctionId)
+        self.autoGenFunctionId += 1
         return newFunc
 
     def __enforceRetrievalEnabled(self):
