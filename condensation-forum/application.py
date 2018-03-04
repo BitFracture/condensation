@@ -50,6 +50,7 @@ googleAuth = oauth.remote_app('google',
         access_token_params = None, #{'grant_type': 'authorization_code'}
         consumer_key = config.get("oauthClientId"),
         consumer_secret = config.get("oauthClientSecret"))
+tempToken = None
 
 
 #@googleAuth.tokengetter
@@ -108,10 +109,6 @@ def authorizedHandler():
     Returns the template "home" wrapped by "body" served as HTML
     """
 
-    #authCode = request.args.get('code')
-    #code = request.args.get('code')
-    #newToken = googleAuth.handle_oauth2_response()
-    #print(newToken, file=sys.stderr)
     response = googleAuth.authorized_response()
     print(json.dumps(response), file=sys.stderr)
 
@@ -121,15 +118,23 @@ def authorizedHandler():
             request.args['error_description']
         )
 
-    #session['access_token'] = (response['access_token'], '')
-    me = googleAuth.get('userinfo', token = response['access_token'])
+    global tempToken
+    tempToken = response['access_token']
+    print ("Setting a token: " + tempToken, file=sys.stderr)
+    me = googleAuth.get('userinfo', token = {'access_token': tempToken})
 
-    homeRendered = "You are authed: " + jsonify(me.data)
-
-    #access_token = response['access_token']
-    #session['access_token'] = access_token, ''
-
+    homeRendered = "You are authed: " + json.dumps(me.data)
     return bodyTemplate.render(body = homeRendered, title = "Test Home")
+
+
+@googleAuth.tokengetter
+def get_google_oauth_token():
+    """
+    googleAuth will automatically use this method to retrieve a token for transactions.
+    """
+    print ("Requesting a token: " + tempToken, file=sys.stderr)
+    return tempToken
+
 
 
 # Load up Jinja2 templates
