@@ -20,10 +20,9 @@ config = ConfigLoader("config.local.json")
 
 # This is the EB application, calling directly into Flask
 application = Flask(__name__)
-application.secret_key = config.get("appSecret")
 
 # Set up service handles
-session  = boto3.Session(
+botoSession = boto3.Session(
     aws_access_key_id = config.get("accessKey"),
     aws_secret_access_key = config.get("secretKey"),
     aws_session_token=None,
@@ -31,8 +30,8 @@ session  = boto3.Session(
     botocore_session=None,
     profile_name=None)
 
-dynamodb = session.resource('dynamodb')
-s3       = session.resource('s3')
+dynamodb = botoSession.resource('dynamodb')
+s3       = botoSession.resource('s3')
 
 authCacheTable = dynamodb.Table('person-attribute-table')
 # Example: bucket = s3.Bucket('elasticbeanstalk-us-west-2-3453535353')
@@ -47,24 +46,35 @@ googleAuth = oauth.remote_app('google',
                 'scope': 'https://www.googleapis.com/auth/userinfo.email'},
         access_token_url = 'https://accounts.google.com/o/oauth2/token',
         access_token_method = 'POST',
-        access_token_params = None, #{'grant_type': 'authorization_code'}
+        access_token_params = None,
         consumer_key = config.get("oauthClientId"),
         consumer_secret = config.get("oauthClientSecret"))
 tempToken = None
 
 
+def requireAuthentication(func):
+    # This function REPLACES the original, and does auth first!
+    def newFunc():
+        access_token = session.get('access_token')
+        if access_token is None:
+            return redirect(url_for('loginHandler'))
+        else:
+            print("User name is: " + session.get('user_name'), file=sys.stderr)
+            return func()
+
+    # Return the auth-enhanced function, which nests the original
+    return newFunc
+
+
 #@googleAuth.tokengetter
 @application.route('/', methods=['GET'])
+@requireAuthentication
 def indexGetHandler():
     """
     Returns the template "home" wrapped by "body" served as HTML
     """
 
-    #access_token = None
-    #if session is not None:
-    #    access_token = session.get('access_token')
-    #if access_token is None:
-    return redirect(url_for('loginHandler'))
+    print("SKINNY GOOSE", file=sys.stderr)
 
     #homeRendered = homeTemplate.render()
     response = authCacheTable.scan()
@@ -110,7 +120,6 @@ def authorizedHandler():
     """
 
     response = googleAuth.authorized_response()
-    print(json.dumps(response), file=sys.stderr)
 
     if response is None:
         return 'Access denied: reason=%s error=%s' % (
@@ -120,8 +129,9 @@ def authorizedHandler():
 
     global tempToken
     tempToken = response['access_token']
-    print ("Setting a token: " + tempToken, file=sys.stderr)
+    session['access_token'] = tempToken
     me = googleAuth.get('userinfo', token = {'access_token': tempToken})
+    session['user_name'] = me.data['name']
 
     homeRendered = "You are authed: " + json.dumps(me.data)
     return bodyTemplate.render(body = homeRendered, title = "Test Home")
@@ -132,7 +142,6 @@ def get_google_oauth_token():
     """
     googleAuth will automatically use this method to retrieve a token for transactions.
     """
-    print ("Requesting a token: " + tempToken, file=sys.stderr)
     return tempToken
 
 
@@ -149,4 +158,6 @@ authTemplate = templateEnv.get_template("testingAuth.html")
 if __name__ == "__main__":
     # Enable debug output, disable in prod
     application.debug = True
+    application.secret_key = config.get("sessionSecret")
+    print (application.secret_key, file=sys.stderr)
     application.run()
