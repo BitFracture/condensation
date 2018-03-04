@@ -49,7 +49,7 @@ def indexGetHandler():
     """
     Returns the template "home" wrapped by "body" served as HTML
     """
-    
+
     #homeRendered = homeTemplate.render()
     response = authCacheTable.scan()
     homeRendered = json.dumps(response)
@@ -73,23 +73,12 @@ def indexPostHandler():
     return indexGetHandler()
 
 
-@application.route('/google', methods=['GET'])
-def authGetHandler():
-    """
-    Returns the template "testingAuth" wrapped by "body" served as HTML
-    """
-
-    authRendered = authTemplate.render()
-    return bodyTemplate.render(body = authRendered, title = "Google Auth Test")
-
-
 # Load up Jinja2 templates
 templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
 templateEnv = jinja2.Environment(loader=templateLoader)
 
 bodyTemplate = templateEnv.get_template("body.html")
 homeTemplate = templateEnv.get_template("home.html")
-authTemplate = templateEnv.get_template("testingAuth.html")
 
 # Run Flask app now
 if __name__ == "__main__":
