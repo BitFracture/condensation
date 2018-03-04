@@ -14,12 +14,12 @@ import time
 import random
 import sys
 from configLoader import ConfigLoader
+from googleOAuthManager import GoogleOAuthManager
 
-
-config = ConfigLoader("config.local.json")
 
 # This is the EB application, calling directly into Flask
 application = Flask(__name__)
+config = ConfigLoader("config.local.json")
 
 # Set up service handles
 botoSession = boto3.Session(
@@ -37,48 +37,27 @@ authCacheTable = dynamodb.Table('person-attribute-table')
 # Example: bucket = s3.Bucket('elasticbeanstalk-us-west-2-3453535353')
 
 # OAuth setup
-oauth = OAuth(application)
-googleAuth = oauth.remote_app('google',
-        base_url = 'https://www.googleapis.com/oauth2/v1/',
-        authorize_url = 'https://accounts.google.com/o/oauth2/auth',
-        request_token_url = None,
-        request_token_params = {
-                'scope': 'https://www.googleapis.com/auth/userinfo.email'},
-        access_token_url = 'https://accounts.google.com/o/oauth2/token',
-        access_token_method = 'POST',
-        access_token_params = None,
-        consumer_key = config.get("oauthClientId"),
-        consumer_secret = config.get("oauthClientSecret"))
-tempToken = None
+authManager = GoogleOAuthManager(
+        flaskApp     = application,
+        clientId     = config.get("oauthClientId"),
+        clientSecret = config.get("oauthClientSecret"))
 
 
-def requireAuthentication(func):
-    # This function REPLACES the original, and does auth first!
-    def newFunc():
-        access_token = session.get('access_token')
-        if access_token is None:
-            return redirect(url_for('loginHandler'))
-        else:
-            print("User name is: " + session.get('user_name'), file=sys.stderr)
-            return func()
-
-    # Return the auth-enhanced function, which nests the original
-    return newFunc
-
-
-#@googleAuth.tokengetter
 @application.route('/', methods=['GET'])
-@requireAuthentication
+@authManager.enableAuthentication
 def indexGetHandler():
     """
     Returns the template "home" wrapped by "body" served as HTML
     """
-
-    print("SKINNY GOOSE", file=sys.stderr)
-
+    
     #homeRendered = homeTemplate.render()
     response = authCacheTable.scan()
     homeRendered = json.dumps(response)
+    user = authManager.getUserData()
+    if user == None:
+        homeRendered += "<br/>User is not logged in"
+    else:
+        homeRendered += "<br/>User is: " + user['name']
     return bodyTemplate.render(body = homeRendered, title = "Test Home")
 
 
@@ -104,48 +83,6 @@ def authGetHandler():
     return bodyTemplate.render(body = authRendered, title = "Google Auth Test")
 
 
-@application.route('/login', methods=['GET'])
-def loginHandler():
-    """
-    Returns the template "testingAuth" wrapped by "body" served as HTML
-    """
-    callback = url_for('authorizedHandler', _external = True)
-    return googleAuth.authorize(callback = callback)
-
-
-@application.route('/authorized', methods=['GET'])
-def authorizedHandler():
-    """
-    Returns the template "home" wrapped by "body" served as HTML
-    """
-
-    response = googleAuth.authorized_response()
-
-    if response is None:
-        return 'Access denied: reason=%s error=%s' % (
-            request.args['error_reason'],
-            request.args['error_description']
-        )
-
-    global tempToken
-    tempToken = response['access_token']
-    session['access_token'] = tempToken
-    me = googleAuth.get('userinfo', token = {'access_token': tempToken})
-    session['user_name'] = me.data['name']
-
-    homeRendered = "You are authed: " + json.dumps(me.data)
-    return bodyTemplate.render(body = homeRendered, title = "Test Home")
-
-
-@googleAuth.tokengetter
-def get_google_oauth_token():
-    """
-    googleAuth will automatically use this method to retrieve a token for transactions.
-    """
-    return tempToken
-
-
-
 # Load up Jinja2 templates
 templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
 templateEnv = jinja2.Environment(loader=templateLoader)
@@ -158,6 +95,6 @@ authTemplate = templateEnv.get_template("testingAuth.html")
 if __name__ == "__main__":
     # Enable debug output, disable in prod
     application.debug = True
+    # Enable encrypted session, required for OAuth to stick
     application.secret_key = config.get("sessionSecret")
-    print (application.secret_key, file=sys.stderr)
     application.run()
