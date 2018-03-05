@@ -1,3 +1,10 @@
+"""The schema for the condensation application data layer.
+
+There are several attributes and several miscelaneous constraints.
+
+There is a brief synopsis for each entity in the documentation, however
+for up to date a specific details about constraints read the code """
+    
 import datetime
 from sqlalchemy import (
         Table, 
@@ -35,6 +42,14 @@ attachments_comment = Table ( "attachments_comment",
 
 
 class User(_Base):
+    """ A user on the site.
+
+    Attributes:
+        - certificate (pk): the google authentication id for the user
+        - name: the display name for the user
+        - uploads: file uploads
+        - threads: the threads a user has created
+        - comments: the comments the user has posted"""
 
     __tablename__ = "users"
     
@@ -44,7 +59,7 @@ class User(_Base):
             primary_key=True)
 
     name = Column(
-            String(25), 
+            String(60), 
             CheckConstraint("length(name) > 0"), 
             nullable=False)
 
@@ -65,12 +80,27 @@ class User(_Base):
 
 
 class File(_Base):
+    """A file upload from a user.
+
+    filenames must be unique to each user
+    
+    Attributes:
+        - id (pk): the generated id for the file
+        - user: the user that generated the file
+        - user_certificate (fk): their google id
+        - name: the symbolic file name
+        - url: the blob location of the file
+        - time_created: the time the file was created
+        - time_modified: the last time the file was modified
+        - attached_threads: the threads the file is attached to
+        - attached_comments: the comments the file is attached to
+        """
     
     __tablename__ = "files"
     
     id = Column(
             Integer, 
-            primary_key=True,)
+            primary_key=True)
 
     user_certificate = Column(
             String(21), 
@@ -101,6 +131,12 @@ class File(_Base):
             default=datetime.datetime.utcnow(), 
             nullable=False)
 
+    time_modified = Column(
+            DateTime, 
+            default=datetime.datetime.utcnow(), 
+            onupdate=datetime.datetime.utcnow(), 
+            nullable=False)
+
     attached_threads = relationship(
             "Thread",
             secondary=attachments_thread,
@@ -112,6 +148,22 @@ class File(_Base):
             back_populates="attachments")
 
 class Thread(_Base):
+    """A user created thread.
+    
+    Attributes:
+        - id (pk): the generated id of the thread
+        - user: the original poster
+        - user_certificate(fk): the id of original poster (also number of op's mom?)
+        - heading: the display heading of the post
+        - body: the body of the post
+        - time_created: time created
+        - time_modified: the last time the thread entity was modified
+        - time_last_reply: the time of the last comment
+        - reply_count: the  number of replies
+        - attachments: uploaded files attached to thread body
+        - replies: the comments on the thread
+        """
+
     __tablename__ = "threads"
     
     id = Column(
@@ -134,7 +186,7 @@ class Thread(_Base):
             nullable=False)
 
     body = Column(
-            String(10000),
+            String(20000),
             CheckConstraint("length(body) > 1"), 
             nullable=False)
 
@@ -151,6 +203,12 @@ class Thread(_Base):
 
     time_last_reply = Column(DateTime)
     
+    @hybrid_property
+    def reply_count(self):
+        if self.replies:
+            return len(self.replies)
+        return 0
+
     attachments = relationship(
             "File",
             secondary=attachments_thread,
@@ -161,40 +219,39 @@ class Thread(_Base):
             cascade="all, delete-orphan", 
             back_populates="thread")
 
-    @hybrid_property
-    def reply_count(self):
-        if self.replies:
-            return len(self.replies)
-        return 0
- 
+
 @event.listens_for(Thread.replies, 'append')
 def comment(thread, comment, initiator):
     """updates the last comment time, when a comment is added"""
     thread.time_last_reply = datetime.datetime.utcnow()
-    print("**********", thread, thread.time_last_reply)
  
 class Comment(_Base):
+    """A user created comment on the thread.
+    
+    Attributes:
+        - id(pk): the generated id of the comment
+        - user: the user that posted the comment
+        - user_certificate(fk): the id of the user
+        - thread: the thread the comment is responding to
+        - thread_id(fk): the generated id of the thread
+        - body: the body of the post 
+        - time_created: the time of the comment
+        - time_modified: the time the comment was modified
+        - attachments: the list of file attachments"""
     __tablename__ = "comments"
     
     id = Column(
             Integer, 
             primary_key=True)
 
-
-    user_certificate = Column(
-            String(21), 
-            ForeignKey(User.certificate), 
-            nullable=False)
-
     user = relationship(
             "User", 
             foreign_keys="Comment.user_certificate",
             back_populates="comments")
 
-
-    thread_id =  Column(
-            Integer,
-            ForeignKey(Thread.id), 
+    user_certificate = Column(
+            String(21), 
+            ForeignKey(User.certificate), 
             nullable=False)
 
     thread = relationship(
@@ -202,10 +259,13 @@ class Comment(_Base):
             foreign_keys="Comment.thread_id",
             back_populates="replies")
 
-    #Comment has a composite foreign key and needs to have it's constraints expressed like this
-    
+    thread_id =  Column(
+            Integer,
+            ForeignKey(Thread.id), 
+            nullable=False)
+
     body = Column(
-            String(10000),
+            String(20000),
             CheckConstraint("length(body) > 1"), 
             nullable=False)
 

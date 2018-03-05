@@ -91,7 +91,7 @@ class TestSchemaUser(SchemaTest):
 
         #test the name attribute
         with self.assertRaises(DataError), sessionMgr.session_scope() as session:
-            session.add(User(certificate=self.values["uid2"], name="my name is verrrrrrrrrrrrryyyyyyyyyyyyy long"))
+            session.add(User(certificate=self.values["uid2"], name=3*"my name is verrrrrrrrrrrrryyyyyyyyyyyyy long"))
 
         with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
             session.add(User(certificate=self.values["uid2"], name=""))
