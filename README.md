@@ -77,8 +77,8 @@ If a user wants to end their authentication, the may be directed to `/logout` an
 `?redirect=url` specifies the URL the user will be directed back to once the action completes. The default URL is
 `/`.
 
-What if a user signs out of Google and not our product? Turns out, this is perfectly fine. We do not use OAuth to
-access resources externally, we are only using it for user details. Even if the token expires, our site will continue
+What if a user signs out of Google and not this website? This is okay. We do not use OAuth to
+access resources externally, we are only using it for user details. Even if the token expires, our session will continue
 to work seamlessly until the user explicitly requests to log out.
 
 To access user details, a decorated route function may use `googleOAuthManager.getUserData()`. This will return `None`
