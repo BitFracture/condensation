@@ -1,11 +1,17 @@
 import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, CheckConstraint, UniqueConstraint
+from sqlalchemy import Table, Column, Integer, String, DateTime, Text, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 
 #this is a collection of the sql alchemy metadata for the schema
 _Base = declarative_base()
+
+#m to n tables 
+attachments_thread = Table ( "attachments_thread",
+        _Base.metadata,
+        Column("file_id", ForeignKey("files.id"), primary_key=True),
+        Column("thread_id", ForeignKey("threads.id"), primary_key=True))
 
 
 class User(_Base):
@@ -25,16 +31,15 @@ class User(_Base):
     uploads = relationship(
             "File", 
             cascade="all, delete-orphan", 
+#            lazy="joined",
             back_populates="user")
 
     threads = relationship(
             "Thread", 
+#            lazy="joined",
             cascade="all, delete-orphan", 
             back_populates="user")
 
-
-    def __repr__(self):
-        return '<User(certificate=%s, name"%s")>' % (self.certificate, self.name)
 
 class File(_Base):
     
@@ -73,12 +78,17 @@ class File(_Base):
             default=datetime.datetime.utcnow(), 
             nullable=False)
 
+    attached = relationship(
+            "Thread",
+            secondary=attachments_thread,
+            back_populates="attachments")
+
 class Thread(_Base):
     __tablename__ = "threads"
     
     id = Column(
             Integer, 
-            primary_key=True,)
+            primary_key=True)
 
     user_certificate = Column(
             String(21), 
@@ -91,12 +101,12 @@ class Thread(_Base):
             back_populates="threads")
 
     heading = Column(
-            String(80),
+            String(160),
             CheckConstraint("length(heading) > 1"), 
             nullable=False)
 
     body = Column(
-            Text(10000),
+            String(10000),
             CheckConstraint("length(body) > 1"), 
             nullable=False)
 
@@ -104,6 +114,12 @@ class Thread(_Base):
             DateTime, 
             default=datetime.datetime.utcnow(), 
             nullable=False)
+    
+    attachments = relationship(
+            "File",
+            secondary=attachments_thread,
+            back_populates="attached")
+
 
 #    @hybrid_property
 #    def reply_count(self):
@@ -111,6 +127,3 @@ class Thread(_Base):
 #            return len(replies)
 #        return 0
     
-
-    def __repr__(self):
-        return '<File(id=%d, name"%s", url="%s", time_created="%s")>' % (self.id, self.name, self.time_created)
