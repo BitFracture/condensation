@@ -149,7 +149,7 @@ class Thread(_Base):
             onupdate=datetime.datetime.utcnow(), 
             nullable=False)
 
-    last_reply = Column(DateTime)
+    time_last_reply = Column(DateTime)
     
     attachments = relationship(
             "File",
@@ -163,17 +163,15 @@ class Thread(_Base):
 
     @hybrid_property
     def reply_count(self):
-        if replies:
-            return len(replies)
+        if self.replies:
+            return len(self.replies)
         return 0
  
 @event.listens_for(Thread.replies, 'append')
-def receive_append(thread, comment, initiator):
+def comment(thread, comment, initiator):
     """updates the last comment time, when a comment is added"""
-    print("****************************************************************************************************************")
-    thread.last_reply = datetime.datetime.utcnow()
-    #returns original value as specified by decorator
-    return comment
+    thread.time_last_reply = datetime.datetime.utcnow()
+    print("**********", thread, thread.time_last_reply)
  
 class Comment(_Base):
     __tablename__ = "comments"

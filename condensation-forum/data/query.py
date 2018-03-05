@@ -1,5 +1,5 @@
 """A collection of queries to enteract with the database"""
-from schema import User, File, Thread
+from schema import User, File, Thread, Comment
 
 def getUser(session, certificate):
     """gets a user by id"""
@@ -52,5 +52,12 @@ def getThreadById(session, tid):
     thread = session.query(Thread).filter(Thread.id == tid)
     if thread:
         return thread.one_or_none()
+    return None
+
+def getCommentById(session, cid):
+    """gets all threads associated with a user"""
+    comment = session.query(Comment).filter(Comment.id == cid)
+    if comment:
+        return comment.one_or_none()
     return None
 

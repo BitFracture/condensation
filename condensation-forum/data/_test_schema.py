@@ -4,7 +4,7 @@
 import unittest, traceback
 from admin import dropSchema, declareSchema
 from session import SessionManager, sessionMgr
-from query import getUser, getFilesByUser,getFileByName, getFileById, getThreadById
+from query import getUser, getFilesByUser,getFileByName, getFileById, getThreadById, getCommentById
 from sqlalchemy.exc import IntegrityError, DataError, InvalidRequestError
 import sqlalchemy
 from schema import User, File, Thread, Comment
@@ -295,61 +295,76 @@ class TestSchemaFile(SchemaTest):
 
     def test_attachment_comment(self):
         fid = 0
-        tid = 0
-        alt_tid = 0
-        cid = 0
-        alt_cid = 0
+        tid1 = 0
+        tid2 = 0
+        cid1 = 0
+        cid2 = 0
         with sessionMgr.session_scope() as session:
-            user1 = User(certificate=self.values["uid1"], name=self.values["name1"])
-            user2 = User(certificate=self.values["uid2"], name=self.values["name2"])
-            user3 = User(certificate=self.values["uid3"], name=self.values["name2"])
-            user1.uploads.append(File(url=self.values["url1"], name=self.values["fname1"]))
-            user2.threads.append(Thread(heading=self.values["heading1"], body=self.values["body1"]))
-            user2.threads[0].replies.append(Comment(user=user2, body=self.values["body1"]))
-            user3.threads.append(Thread(heading=self.values["heading1"], body=self.values["body1"]))
-            session.add(user1)
-            session.add(user2)
-            session.add(user3)
+            users = []
+            users.append(User(certificate=self.values["uid1"], name=self.values["name1"]))
+            users.append(User(certificate=self.values["uid2"], name=self.values["name2"]))
+            users.append(User(certificate=self.values["uid3"], name=self.values["name3"]))
+            for user in users:
+                user.threads.append(Thread(heading=self.values["heading1"], body=self.values["body1"]))
+                user.threads.append(Thread(heading=self.values["heading2"], body=self.values["body2"]))
+            for user in users:
+                for thread in user.threads:
+                    thread.replies.append(Comment(user=users[0], body=self.values["body1"]))
+                    thread.replies.append(Comment(user=users[1], body=self.values["body2"]))
+                    thread.replies.append(Comment(user=users[2], body=self.values["body3"]))
+            users[0].uploads.append(File(name=self.values["fname1"], url=self.values["url1"]))
+            for user in users:
+                session.add(user)
+
 
         with sessionMgr.session_scope() as session:
             user1 = getUser(session, self.values["uid1"])
             user2 = getUser(session, self.values["uid2"])
             user3 = getUser(session, self.values["uid3"])
             fid = user1.uploads[0].id
-            tid = user2.threads[0].id
-            alt_tid = user3.threads[0].id
-            
+            tid1 = user2.threads[0].id
+            tid2 = user3.threads[0].id
+            cid1 = user2.threads[0].replies[0].id
+            cid2 = user3.threads[0].replies[0].id
 
         with sessionMgr.session_scope() as session:
             file1 = getFileById(session, fid)
-            thread1 = getThreadById(session, tid)
-            thread2 = getThreadById(session, alt_tid)
-            thread1.attachments.append(file1)
-            thread2.attachments.append(file1)
+            comment1 = getCommentById(session, cid1)
+            comment2 = getCommentById(session, cid2)
+            comment1.attachments.append(file1)
+            comment2.attachments.append(file1)
             
         with sessionMgr.session_scope() as session:
             file1 = getFileById(session, fid)
-            thread1 = getThreadById(session, tid)
-            self.assertTrue(thread1 in file1.attached_threads)
+            comment1 = getCommentById(session, cid1)
+            self.assertTrue(comment1 in file1.attached_comments)
 
         with sessionMgr.session_scope() as session:
             session.delete(user2)
 
         with sessionMgr.session_scope() as session:
             file1 = getFileById(session, fid)
-            self.assertTrue(len(file1.attached_threads)==1)
+            self.assertTrue(len(file1.attached_comments)==1)
 
         with sessionMgr.session_scope() as session:
             file1 = getFileById(session, fid)
-            thread2 = getThreadById(session, alt_tid)
-            thread2.attachments.remove(file1)
+            comment2 = getCommentById(session, cid2)
+            comment2.attachments.remove(file1)
 
         with sessionMgr.session_scope() as session:
             file1 = getFileById(session, fid)
             self.assertTrue(len(file1.attached_threads)==0)
+            
+        with sessionMgr.session_scope() as session:
+            file1 = getFileById(session, fid)
+            session.delete(file1)
+
+        with sessionMgr.session_scope() as session:
+            user1 = getUser(session, self.values["uid1"])
+            self.assertTrue(len(user1.uploads)==0)
 
 class TestSchemaThread(SchemaTest):
-    """Tests the user entity"""
+    """Tests the thread entity"""
 
     def test_create(self):
         """Test object creation."""
@@ -414,6 +429,112 @@ class TestSchemaThread(SchemaTest):
         with sessionMgr.session_scope() as session:
             t = getThreadById(session, id)
             self.assertTrue(t.heading == self.values["heading2"] )
+            
+class TestSchemaComment(SchemaTest):
+    """Tests the comment entity"""
+    def test_create(self):
+        """Test object creation."""
+        with sessionMgr.session_scope() as session:
+            users = []
+            users.append(User(certificate=self.values["uid1"], name=self.values["name1"]))
+            users.append(User(certificate=self.values["uid2"], name=self.values["name2"]))
+            users.append(User(certificate=self.values["uid3"], name=self.values["name3"]))
+            for user in users:
+                user.threads.append(Thread(heading=self.values["heading1"], body=self.values["body1"]))
+                user.threads.append(Thread(heading=self.values["heading2"], body=self.values["body2"]))
+            for user in users:
+                for thread in user.threads:
+                    thread.replies.append(Comment(user=users[0], body=self.values["body1"]))
+                    thread.replies.append(Comment(user=users[1], body=self.values["body2"]))
+                    thread.replies.append(Comment(user=users[2], body=self.values["body3"]))
+            for user in users:
+                session.add(user)
+
+
+        with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
+            user = getUser(session,self.values["uid3"])
+            user.threads[0].replies.append(Comment(body=self.values["body3"]))
+
+        with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
+            user = getUser(session,self.values["uid3"])
+            user.threads[0].replies.append(Comment(user=users[0], body=""))
+
+        with self.assertRaises(IntegrityError), sessionMgr.session_scope() as session:
+            user = getUser(session,self.values["uid3"])
+            user.threads[0].replies.append(Comment(user=users[0]))
+        
+
+    def test_delete(self):
+        """test deletion operations"""
+        with sessionMgr.session_scope() as session:
+            users = []
+            users.append(User(certificate=self.values["uid3"], name=self.values["name3"]))
+            users.append(User(certificate=self.values["uid2"], name=self.values["name3"]))
+            for user in users:
+                user.threads.append(Thread(heading=self.values["heading1"], body=self.values["body1"]))
+                user.threads.append(Thread(heading=self.values["heading1"], body=self.values["body1"]))
+            for user in users:
+                for thread in user.threads:
+                    thread.replies.append(Comment(user=users[0], body=self.values["body1"]))
+                    thread.replies.append(Comment(user=users[0], body=self.values["body2"]))
+                    thread.replies.append(Comment(user=users[1], body=self.values["body3"]))
+            for user in users:
+                session.add(user)
+
+        ct = 0
+        cid = 0
+        with sessionMgr.session_scope() as session:
+            user = getUser(session,self.values["uid3"])
+            ct = user.threads[0].reply_count
+            cid = user.threads[0].replies[0].id
+            session.delete(user.threads[0].replies[0])
+
+        with sessionMgr.session_scope() as session:
+            self.assertIsNone(getCommentById(session,cid))
+            user = getUser(session,self.values["uid3"])
+            self.assertTrue(user.threads[0].reply_count + 1 == ct)
+
+        with sessionMgr.session_scope() as session:
+            user = getUser(session,self.values["uid3"])
+            cid = user.threads[0].replies[0].id
+            session.delete(user.threads[0])
+        with sessionMgr.session_scope() as session:
+            self.assertIsNone(getCommentById(session,cid))
+
+        with sessionMgr.session_scope() as session:
+            user = getUser(session,self.values["uid3"])
+            cid = user.threads[0].replies[0].id
+            session.delete(user)
+        with sessionMgr.session_scope() as session:
+            self.assertIsNone(getCommentById(session,cid))
+
+    def test_update(self):
+        """test update operations"""
+        with sessionMgr.session_scope() as session:
+            users = []
+            users.append(User(certificate=self.values["uid3"], name=self.values["name3"]))
+            users.append(User(certificate=self.values["uid2"], name=self.values["name3"]))
+            for user in users:
+                user.threads.append(Thread(heading=self.values["heading1"], body=self.values["body1"]))
+            for user in users:
+                for thread in user.threads:
+                    thread.replies.append(Comment(user=users[0], body=self.values["body1"]))
+                    thread.replies.append(Comment(user=users[1], body=self.values["body2"]))
+            for user in users:
+                session.add(user)
+
+        editTime = None
+        with sessionMgr.session_scope() as session:
+            user = getUser(session,self.values["uid3"])
+            editTime = user.threads[0].time_last_reply
+            user.threads[0].replies.append(Comment(user=users[1], body=self.values["body2"]))
+            self.assertTrue(editTime < user.threads[0].time_last_reply)
+            
+        cid = 0
+        with sessionMgr.session_scope() as session:
+            user = getUser(session,self.values["uid3"])
+            user.threads[0].replies[0].body = self.values["body3"]
+            self.assertTrue(user.comments[1].body == self.values["body3"])
 
 if __name__ == "__main__":
     unittest.main()
