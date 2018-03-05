@@ -2,14 +2,20 @@
 """Test suite for testing the schema constraints"""
 
 import unittest, traceback
-from admin import dropSchema, declareSchema
-from session import SessionManager
-from query import getUser, getFilesByUser,getFileByName, getFileById, getThreadById, getCommentById
+from data.admin import dropSchema, declareSchema
+from data.session import SessionManager
+from data.query import getUser, getFilesByUser,getFileByName, getFileById, getThreadById, getCommentById
 from sqlalchemy.exc import IntegrityError, DataError, InvalidRequestError
 import sqlalchemy
-from schema import User, File, Thread, Comment
+from data.schema import User, File, Thread, Comment
+from configLoader import ConfigLoader
 
-sessionMgr = SessionManager("postgres","password","localhost", debug=True)
+
+config = ConfigLoader("config.local.json")
+sessionMgr = SessionManager(
+        config.get("dbUser"),
+        config.get("dbPassword"),
+        config.get("dbEndpoint"))
 
 class SchemaTest(unittest.TestCase):
     """base setup for all schema related tests"""

@@ -1,5 +1,5 @@
 """A collection of queries to enteract with the database"""
-from schema import User, File, Thread, Comment
+from .schema import User, File, Thread, Comment
 
 def getUser(session, certificate):
     """gets a user by id"""

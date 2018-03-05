@@ -28,6 +28,8 @@ The deployed web service lives at `condensation-forum.us-west-2.elasticbeanstalk
  - Before deploying, confirm with group members. Run `eb deploy`
  - Quick deployment command `make deploy` is set up already
 
+ - deploy the database by running 
+
 ## Running the local server
 
  - In the `condensation-forum` folder, create a local config file called `config.local.json`<br/>
@@ -38,7 +40,10 @@ The deployed web service lives at `condensation-forum.us-west-2.elasticbeanstalk
     "region":            "us-west-2",
     "oauthClientId":     "000000000000000000000000000000000000000000000.apps.googleusercontent.com",
     "oauthClientSecret": "111122223333444455556666",
-    "sessionSecret":     "11aa22bb33cc44dd55ee77hh"
+    "sessionSecret":     "11aa22bb33cc44dd55ee77hh",
+    "dbEndpoint": "www.example.com"
+    "dbUser": "pg_sql",
+    "dbPassword": "password"
 }
 ```
  - If you have GNU Make, use `make run`
@@ -99,6 +104,10 @@ Jinja2 and Flask are used to render HTML templates into responses and send them 
 ## Deployment
 
 The Python3 application is deployed to EC2 via Elastic Beanstalk. The configuration steps are listed above and are compiled into bash and batch scripts.
+
+To redeploy the database follow the same procedure.
+
+
 
 # Report Components
 

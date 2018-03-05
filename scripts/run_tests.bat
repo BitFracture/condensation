@@ -19,7 +19,7 @@ pip3 install -r requirements.txt
 echo.
 echo Running application
 echo.
-data/_test_schema.py
+python3 _test_schema.py
 
 popd
 

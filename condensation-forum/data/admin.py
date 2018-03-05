@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 """Administrtative code for the data layer.
 
 Running this module will regenerate the database.
@@ -8,8 +7,8 @@ static methods:
     dropSchema - drops the schema
     populate - populates the database with data
 """
-from schema import _Base, User, File, Thread, Comment
-from session import SessionManager
+from . import session
+from .schema import _Base, User, File, Thread, Comment
 from sqlalchemy import *
 from sqlalchemy.engine import reflection
 from sqlalchemy.schema import Table, DropTable, DropConstraint
@@ -133,10 +132,4 @@ def populate(session):
 
 
 
-if __name__ == "__main__":
-    sessionMgr = SessionManager("postgres","password","localhost", debug=True)
-    with sessionMgr.session_scope() as session:
-        dropSchema(sessionMgr.engine)
-        declareSchema(sessionMgr.engine)
-        populate(session)
 

@@ -13,7 +13,7 @@ cd condensation-forum
 printf "Installing prerequisites\n\n"
 pip3 install -r requirements.txt
 printf "\nRunning application\n\n"
-data/_test_schema.py
+python3 _test_schema.py
 
 cd ..
 

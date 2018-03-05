@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from schema import User
 from contextlib import contextmanager
 """Abstracts the data layer of the condensation forum.
 
