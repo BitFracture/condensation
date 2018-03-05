@@ -50,15 +50,13 @@ def indexGetHandler():
     Returns the template "home" wrapped by "body" served as HTML
     """
 
-    #homeRendered = homeTemplate.render()
-    response = authCacheTable.scan()
-    homeRendered = json.dumps(response)
+    homeRendered = homeTemplate.render()
     user = authManager.getUserData()
     if user == None:
-        homeRendered += "<br/>User is not logged in"
+        homeRendered += "<br/><br/>User is not logged in"
     else:
-        homeRendered += "<br/>User is: " + user['name']
-    return bodyTemplate.render(body = homeRendered, title = "Test Home")
+        homeRendered += "<br/><br/>User is: " + user['name']
+    return bodyTemplate.render(body = homeRendered, title = "Test Home", user = user)
 
 
 @application.route('/', methods=['POST'])
