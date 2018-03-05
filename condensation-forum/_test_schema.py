@@ -11,11 +11,7 @@ from data.schema import User, File, Thread, Comment
 from configLoader import ConfigLoader
 
 
-config = ConfigLoader("config.local.json")
-sessionMgr = SessionManager(
-        config.get("dbUser"),
-        config.get("dbPassword"),
-        config.get("dbEndpoint"))
+sessionMgr = SessionManager( "postgres", "password", "localhost")
 
 class SchemaTest(unittest.TestCase):
     """base setup for all schema related tests"""

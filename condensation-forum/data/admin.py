@@ -62,8 +62,8 @@ def populate(session):
     values["url1"] = "www.joes-crematorium.com"
     values["url2"] = "www.parrot-muzzles-r-us.com"
     values["url3"] = "www.tire-photos.com"
-    values["heading1"] = "420 yolo swag 4 real"
-    values["heading2"] = "shitpost"
+    values["heading1"] = "First! Lol"
+    values["heading2"] = "TIL spiders are terrible"
     values["heading3"] = "I ate a melon, rind and all. AMA"
     values["body1"] = "Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit..."
     values["body2"] = """Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut eu lacus nibh. Vestibulum neque leo, viverra nec eros sit amet, vehicula feugiat ligula. Quisque maximus, neque in gravida ultricies, nunc mauris pretium orci, ut porta augue purus in nulla. Integer non aliquet risus. Nam ligula urna, euismod scelerisque metus eu, malesuada suscipit lorem. Proin ullamcorper lorem quis rhoncus iaculis. Integer sollicitudin sed lectus quis faucibus.
@@ -101,30 +101,33 @@ def populate(session):
         
     Pellentesque non rutrum neque, ac posuere sapien. Morbi laoreet turpis urna, et mattis elit scelerisque ornare. Ut euismod odio a faucibus maximus. Ut molestie eleifend nisl vel tristique. Morbi vel ligula sagittis, scelerisque quam id, tincidunt urna. Donec vel efficitur eros. Etiam a turpis auctor, pretium nisl at, lacinia quam. Aenean mollis, tellus id tempus pharetra, ex turpis consequat nibh, sit amet pellentesque tellus elit vitae elit. Praesent a hendrerit sem. Phasellus cursus bibendum placerat. Praesent feugiat porta lorem sed feugiat. Aliquam vulputate pharetra tortor at mattis. Nulla elementum vitae orci in feugiat. Curabitur metus odio, rhoncus sed ligula id, vulputate porta lacus. Quisque tempus finibus vehicula."""
 
-    users = []
-    users.append(User(certificate=values["uid1"], name=values["name1"]))
-    users.append(User(certificate=values["uid2"], name=values["name2"]))
-    users.append(User(certificate=values["uid3"], name=values["name3"]))
-    for user in users:
-        user.threads.append(Thread(heading=values["heading1"], body=values["body1"]))
-        user.threads.append(Thread(heading=values["heading2"], body=values["body2"]))
-    for user in users:
-        for thread in user.threads:
-            thread.replies.append(Comment(user=users[0], body=values["body1"]))
-            thread.replies.append(Comment(user=users[1], body=values["body2"]))
-            thread.replies.append(Comment(user=users[2], body=values["body3"]))
+    users = [ User(certificate=values["uid1"], name=values["name1"]), 
+            User(certificate=values["uid2"], name=values["name2"]), 
+            User(certificate=values["uid3"], name=values["name3"])]
+    files = [File(name=values["fname1"], url=["url1"]), 
+            File(name=values["fname2"], url=["url2"]), 
+            File(name=values["fname3"], url=["url3"])]
+    threads = [Thread(heading=values["heading1"], body=values["body1"]),
+            Thread(heading=values["heading2"], body=values["body2"]),
+            Thread(heading=values["heading3"], body=values["body3"])]
+    comments = [Comment(user= users[0], body=values["body1"]), 
+            Comment(user= users[1], body=values["body1"]), 
+            Comment(user= users[2], body=values["body1"])]
 
-    files = [File(name=values["fname1"], url=["url1"]), File(name=values["fname2"], url=["url2"]), File(name=values["fname3"], url=["url3"])]
+    for user, thread in zip(users, threads):
+        user.threads.append(thread)
+
+    for thread, comment in zip(threads, comments):
+            thread.replies.append(comment)
+
     for user, upload in zip(users, files):
         user.uploads.append(upload)
 
-    for user in users:
-        for thread in user.threads:
-            for upload in files:
-                thread.attachments.append(upload)
-        for comment in user.comments:
-            for upload in files:
-                comment.attachments.append(upload)
+    for thread, upload in zip(threads, files):
+        thread.attachments.append(upload)
+
+    for comment, upload in zip(comments, files):
+        comment.attachments.append(upload)
 
     for user in users:
         session.add(user)

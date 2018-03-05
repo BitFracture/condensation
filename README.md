@@ -27,8 +27,7 @@ The deployed web service lives at `condensation-forum.us-west-2.elasticbeanstalk
 	- Do not set up CodeCommit, as we use GitHub and our own deploy script
  - Before deploying, confirm with group members. Run `eb deploy`
  - Quick deployment command `make deploy` is set up already
-
- - deploy the database by running 
+ - deploying the database is done seperately with th `generate_database` scripts
 
 ## Running the local server
 
