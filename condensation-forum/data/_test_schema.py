@@ -7,7 +7,7 @@ from session import SessionManager, sessionMgr
 from query import getUser, getFilesByUser,getFileByName, getFileById, getThreadById
 from sqlalchemy.exc import IntegrityError, DataError, InvalidRequestError
 import sqlalchemy
-from schema import User, File, Thread
+from schema import User, File, Thread, Comment
 
 class SchemaTest(unittest.TestCase):
     """base setup for all schema related tests"""
@@ -275,14 +275,14 @@ class TestSchemaFile(SchemaTest):
         with sessionMgr.session_scope() as session:
             file1 = getFileById(session, fid)
             thread1 = getThreadById(session, tid)
-            self.assertTrue(thread1 in file1.attached)
+            self.assertTrue(thread1 in file1.attached_threads)
 
         with sessionMgr.session_scope() as session:
             session.delete(user2)
 
         with sessionMgr.session_scope() as session:
             file1 = getFileById(session, fid)
-            self.assertTrue(len(file1.attached)==1)
+            self.assertTrue(len(file1.attached_threads)==1)
 
         with sessionMgr.session_scope() as session:
             file1 = getFileById(session, fid)
@@ -291,13 +291,62 @@ class TestSchemaFile(SchemaTest):
 
         with sessionMgr.session_scope() as session:
             file1 = getFileById(session, fid)
-            self.assertTrue(len(file1.attached)==0)
+            self.assertTrue(len(file1.attached_threads)==0)
 
+    def test_attachment_comment(self):
+        fid = 0
+        tid = 0
+        alt_tid = 0
+        cid = 0
+        alt_cid = 0
+        with sessionMgr.session_scope() as session:
+            user1 = User(certificate=self.values["uid1"], name=self.values["name1"])
+            user2 = User(certificate=self.values["uid2"], name=self.values["name2"])
+            user3 = User(certificate=self.values["uid3"], name=self.values["name2"])
+            user1.uploads.append(File(url=self.values["url1"], name=self.values["fname1"]))
+            user2.threads.append(Thread(heading=self.values["heading1"], body=self.values["body1"]))
+            user2.threads[0].replies.append(Comment(user=user2, body=self.values["body1"]))
+            user3.threads.append(Thread(heading=self.values["heading1"], body=self.values["body1"]))
+            session.add(user1)
+            session.add(user2)
+            session.add(user3)
 
+        with sessionMgr.session_scope() as session:
+            user1 = getUser(session, self.values["uid1"])
+            user2 = getUser(session, self.values["uid2"])
+            user3 = getUser(session, self.values["uid3"])
+            fid = user1.uploads[0].id
+            tid = user2.threads[0].id
+            alt_tid = user3.threads[0].id
+            
 
+        with sessionMgr.session_scope() as session:
+            file1 = getFileById(session, fid)
+            thread1 = getThreadById(session, tid)
+            thread2 = getThreadById(session, alt_tid)
+            thread1.attachments.append(file1)
+            thread2.attachments.append(file1)
+            
+        with sessionMgr.session_scope() as session:
+            file1 = getFileById(session, fid)
+            thread1 = getThreadById(session, tid)
+            self.assertTrue(thread1 in file1.attached_threads)
 
+        with sessionMgr.session_scope() as session:
+            session.delete(user2)
 
+        with sessionMgr.session_scope() as session:
+            file1 = getFileById(session, fid)
+            self.assertTrue(len(file1.attached_threads)==1)
 
+        with sessionMgr.session_scope() as session:
+            file1 = getFileById(session, fid)
+            thread2 = getThreadById(session, alt_tid)
+            thread2.attachments.remove(file1)
+
+        with sessionMgr.session_scope() as session:
+            file1 = getFileById(session, fid)
+            self.assertTrue(len(file1.attached_threads)==0)
 
 class TestSchemaThread(SchemaTest):
     """Tests the user entity"""
@@ -368,5 +417,4 @@ class TestSchemaThread(SchemaTest):
 
 if __name__ == "__main__":
     unittest.main()
-
 
