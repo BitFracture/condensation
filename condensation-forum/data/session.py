@@ -6,8 +6,28 @@ from contextlib import contextmanager
 
 Classes:
     SessionManager -- Opens up a lazily evaluating connection to a provided datavase.
+    Singleton -- Canned Singleton solution from stack overflow
 """
+def singleton(cls):
+    """ decorator for a class to make a singleton out of it 
+    
+    Adopted by Collin from
+    http://code.activestate.com/recipes/578103-singleton-parameter-based/
+    """
+    classInstance = None
 
+    def getInstance(*args, **kwargs):
+        """ creating or just return the one and only class instance.
+            The singleton depends on the parameters used in __init__ """
+        nonlocal classInstance
+        if not classInstance:
+            classInstance = cls(*args, **kwargs)
+            return classInstance
+        raise ArgumentError
+    return getInstance
+
+
+@singleton
 class SessionManager:
     """Opens up a session with our ORM and executes transactions lazily.
 
@@ -48,4 +68,3 @@ class SessionManager:
             session.close()
             
 
-sessionMgr = SessionManager("postgres","password","localhost", debug=True)

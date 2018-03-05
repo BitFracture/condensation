@@ -3,19 +3,23 @@
 
 import unittest, traceback
 from admin import dropSchema, declareSchema
-from session import SessionManager, sessionMgr
+from session import SessionManager
 from query import getUser, getFilesByUser,getFileByName, getFileById, getThreadById, getCommentById
 from sqlalchemy.exc import IntegrityError, DataError, InvalidRequestError
 import sqlalchemy
 from schema import User, File, Thread, Comment
+
+sessionMgr = SessionManager("postgres","password","localhost", debug=True)
 
 class SchemaTest(unittest.TestCase):
     """base setup for all schema related tests"""
 
 
     def setUp(self):
-        dropSchema()
-        declareSchema()
+        
+        with sessionMgr.session_scope() as session:
+            dropSchema(sessionMgr.engine)
+            declareSchema(sessionMgr.engine)
         self.values = {}
         self.values["name1"] = "Bilbo Baggins"
         self.values["name2"] = "Frodo Baggins"

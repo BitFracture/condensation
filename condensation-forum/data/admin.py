@@ -8,7 +8,6 @@ static methods:
     dropSchema - drops the schema
     populate - populates the database with data
 """
-from session import SessionManager, sessionMgr
 from schema import _Base, User, File
 from sqlalchemy import *
 from sqlalchemy.engine import reflection
@@ -16,42 +15,39 @@ from sqlalchemy.schema import Table, DropTable, DropConstraint
 
 
 
-def declareSchema():
+def declareSchema(engine):
     """Declares the schema."""
-    with sessionMgr.session_scope():
-        _Base.metadata.create_all(bind=sessionMgr.engine)
+    _Base.metadata.create_all(bind=engine)
 
     
-def dropSchema():
+def dropSchema(engine):
     """Drops the schema."""
 
     # From http://www.sqlalchemy.org/trac/wiki/UsageRecipes/DropEverything
-    inspector = reflection.Inspector.from_engine(sessionMgr.engine)
+    inspector = reflection.Inspector.from_engine(engine)
     metadata = MetaData()
-
-    with sessionMgr.session_scope() as session:
     
-        tbs = []
-        all_fks = []
+    tbs = []
+    all_fks = []
     
-        for table_name in inspector.get_table_names():
-            fks = []
-            for fk in inspector.get_foreign_keys(table_name):
-                if not fk['name']:
-                    continue
-                fks.append( ForeignKeyConstraint((),(),name=fk['name']))
-            t = Table(table_name,metadata,*fks)
-            tbs.append(t)
-            all_fks.extend(fks)
+    for table_name in inspector.get_table_names():
+        fks = []
+        for fk in inspector.get_foreign_keys(table_name):
+            if not fk['name']:
+                continue
+            fks.append( ForeignKeyConstraint((),(),name=fk['name']))
+        t = Table(table_name,metadata,*fks)
+        tbs.append(t)
+        all_fks.extend(fks)
     
-        for fkc in all_fks:
-            sessionMgr.engine.execute(DropConstraint(fkc))
+    for fkc in all_fks:
+        engine.execute(DropConstraint(fkc))
     
-        for table in tbs:
-            sessionMgr.engine.execute(DropTable(table))
+    for table in tbs:
+        engine.execute(DropTable(table))
 
 
-def populate():
+def populate(session):
     """Populates the database with data."""
     certificates = ["109584283992409810224", "109584283922409810234", "109582283992409810234", "209584283992409810234"]
     names = ["Bilbo Baggins", "Gandalf Greyhame", "Merry Took", "Pippin Took"]
@@ -66,7 +62,9 @@ def populate():
 
 
 if __name__ == "__main__":
-    dropSchema()
-    declareSchema()
-    populate()
+    sessionMgr = SessionManager("postgres","password","localhost", debug=True)
+    with sessionMgr.session_scope() as session:
+        dropSchema(sessionMgr.engine)
+        declareSchema(sessionMgr.engine)
+        populate(session)
 

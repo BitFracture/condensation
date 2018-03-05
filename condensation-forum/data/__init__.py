@@ -26,9 +26,11 @@ SESSIONS:
 Everything in sqlalchemy revolves around a session. these are instantiated
 from a global singleton pool, and do not play nicely with concurrency. 
 
-To help smooth this the data.session module contains a wrapper object, the
-sessionMgr. Import it like so:
-    from data.session import sessionMgr
+Create one and use it for the lifetime of your application like so:
+
+sessionMgr = SessionManager("user","password","endpoint")
+
+It follows the singleton pattern and will not allow additional instatiations
 
 Using it is pretty easy. Whenever you need to do something with the database
 open up a session using the provided session_scope context manager.
