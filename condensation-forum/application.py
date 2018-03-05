@@ -19,7 +19,10 @@ from googleOAuthManager import GoogleOAuthManager
 
 # This is the EB application, calling directly into Flask
 application = Flask(__name__)
+# Loads config from file or environment variable
 config = ConfigLoader("config.local.json")
+# Enable encrypted session, required for OAuth to stick
+application.secret_key = config.get("sessionSecret")
 
 # Set up service handles
 botoSession = boto3.Session(
@@ -83,6 +86,4 @@ homeTemplate = templateEnv.get_template("home.html")
 if __name__ == "__main__":
     # Enable debug output, disable in prod
     application.debug = True
-    # Enable encrypted session, required for OAuth to stick
-    application.secret_key = config.get("sessionSecret")
     application.run()
