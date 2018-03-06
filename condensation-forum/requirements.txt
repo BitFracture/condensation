@@ -7,3 +7,4 @@ boto3
 Flask-OAuthlib
 SQLAlchemy
 psycopg2-binary
+flask-wtf

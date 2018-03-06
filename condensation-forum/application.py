@@ -17,6 +17,7 @@ from configLoader import ConfigLoader
 from googleOAuthManager import GoogleOAuthManager
 from data.session import SessionManager
 from data import query
+from forms import CreateThreadForm
 
 
 
@@ -27,6 +28,8 @@ application = Flask(__name__)
 config = ConfigLoader("config.local.json")
 # Enable encrypted session, required for OAuth to stick
 application.secret_key = config.get("sessionSecret")
+#used for form validation
+application.config["SECRET_KEY"]=config.get("sessionSecret")
 
 # Set up service handles
 botoSession = boto3.Session(
@@ -79,8 +82,8 @@ def indexGetHandler():
     return bodyTemplate.render(body = homeRendered, user = user )
 
 
-@application.route('/', methods=['POST'])
 @authManager.requireAuthentication
+@application.route('/', methods=['POST'])
 def indexPostHandler():
     """
     Outputs the user's submission to console and returns index GET response.
@@ -91,10 +94,22 @@ def indexPostHandler():
 
     return indexGetHandler()
 
-@application.route('/create/thread/', methods=['GET'])
+@authManager.requireAuthentication
+@application.route("/create/thread/", methods=["GET", "POST"])
 def createThreadHandler():
     """Renders the thread creation screen """
-    rendered = createThreadTemplate.render()
+
+    #do not allow unauthenticated users to submit
+    form = CreateThreadForm()
+
+    if form.validate_on_submit():
+        #TODO validate files and recreate the form 
+        return redirect(url_for("indexPostHandler"))
+
+    #TODO error handling
+
+    #Render it and submit to user
+    rendered = createThreadTemplate.render(form=form)
     return bodyTemplate.render(body=rendered)
 
 @application.route("/thread/<int:tid>)", methods=["GET"])
