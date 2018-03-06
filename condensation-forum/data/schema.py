@@ -78,6 +78,13 @@ class User(_Base):
             cascade="all, delete-orphan", 
             back_populates="user")
 
+    def toDict(self):
+        """returns dict of primary attributes"""
+        out = {}
+        out["certificate"] = self.certificate
+        out["name"] = self.name
+        return out
+
 
 class File(_Base):
     """A file upload from a user.
@@ -146,6 +153,17 @@ class File(_Base):
             "Comment",
             secondary=attachments_comment,
             back_populates="attachments")
+
+    def toDict(self):
+        """returns dict of primary attributes"""
+        out = {}
+        out["id"] = self.id
+        out["user_certificate"] = self.user_certificate
+        out["name"] = self.name
+        out["url"] = self.url
+        out["time_created"] = self.time_created
+        out["time_created"] = self.time_modified
+        return out
 
 class Thread(_Base):
     """A user created thread.
@@ -219,6 +237,19 @@ class Thread(_Base):
             cascade="all, delete-orphan", 
             back_populates="thread")
 
+    def toDict(self):
+        out = {}
+        out["id"] = self.id
+        out["user_certificate"] = self.user_certificate
+        out["heading"] = self.heading
+        out["body"] = self.body 
+        out["time_created"] = self.time_created
+        out["time_modified"] = self.time_modified 
+        out["time_last_reply"] = self.time_last_reply 
+        out["reply_count"] = self.reply_count
+        return out
+        
+
 
 @event.listens_for(Thread.replies, 'append')
 def comment(thread, comment, initiator):
@@ -284,4 +315,16 @@ class Comment(_Base):
             "File",
             secondary=attachments_comment,
             back_populates="attached_comments")
+
+    def toDict(self):
+        """populates a dictionary with our primary attributes"""
+        out = {}
+        out["id"] = self.id
+        out["user_certificate"] = self.user_certificate
+        out["thread_id"] = self.thread_id
+        out["body"] = self.body
+        out["time_created"] = self.time_created
+        out["time_modified"] = self.time_modified
+        out["user_certificate"] = self.user_certificate
+        return out
 

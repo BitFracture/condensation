@@ -1,17 +1,39 @@
-
-<h2>Do a Thing</h2>
-
-<form method="POST" action="/">
-
-    <div class="form-group">
-        <label for="firstName">Box 1</label>
-        <input type="text" class="form-control" id="box2" name="box2" placeholder="Enter some text">
+{% block body %}
+<div class="row">
+    <div class="col-md-9"> 
+        <h3>Condensation</h3> 
     </div>
-    <div class="form-group">
-        <label for="lastName">Box 2</label>
-        <input type="text" class="form-control" id="box1" name="box1" placeholder="Enter some text">
+    <div class="col-md-3">    
+        <button type="button" class="btn btn-primary">Create Thread</button>  
     </div>
 
-    <button type="submit" class="btn btn-primary">Do Things</button>
+</div>
 
-</form>
+<div class="row">
+    <div class="col-md-9"><h4>Thread</h4></div>
+    <div class="col-md-3"><h4>Last Reply Time</h4</div>
+</div>
+
+
+<div class="container-fluid">
+    {% for thread in threads %}
+
+    <a href="{{ thread["id"] }}">
+        <div class="row">
+            <div class="col-md-9">
+                <b>{{ thread["heading"] }}</b>
+            </div>
+            <div class="col-md-3">
+                {{ thread["time_last_reply"] }}
+            </div>
+        </div>
+    </a>
+
+    {% else %}
+
+    <em>No entries here so far</em>
+
+    {% endfor %}
+
+</div>
+{% endblock %}
