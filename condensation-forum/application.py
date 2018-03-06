@@ -66,13 +66,12 @@ def indexGetHandler():
     with dataSessionMgr.session_scope() as dbSession:
         threads = query.getThreadsByCommentTime(dbSession)
         urls = [url_for("threadGetHandler", tid=thread.id) for thread in threads]
-        users = [thread.user for thread in threads]
+        usernames = [thread.user.name for thread in threads]
         threads = query.extractOutput(threads)
-        users = query.extractOutput(users)
 
 
 
-    homeRendered = homeTemplate.render(threads_zip_users_zip_urls=zip(threads, users, urls))
+    homeRendered = homeTemplate.render(threads=threads, urls=urls, usernames=usernames)
 
     user = authManager.getUserData()
 
@@ -93,12 +92,35 @@ def indexPostHandler():
 
 @application.route("/thread/<int:tid>)")
 def threadGetHandler(tid):
-    return bodyTemplate.render(body=threadTemplate.render())
+    #grab the thread with attachments
+    thread = None
+    with dataSessionMgr.session_scope() as dbSession:
+        thread = query.getThreadById(dbSession, tid)
+        thread_attachements = query.extractOutput(thread.attachments)
+        op = thread.user.name
+        post_attachments = query.extractOutput(thread.attachments)
+        comments = query.getCommentsByThread(dbSession, thread.id)
+        comment_attachments = [query.extractOutput(comment.attachments) for comment in comments]
+        comment_users = [comment.user.name for comment in comments]
+        comments = query.extractOutput(comments)
+        thread = query.extractOutput(thread)
+        
+    threadRendered = threadTemplate.render(
+            thread = thread, 
+            thread_attachements=thread_attachements,
+            op=op, 
+            comments=comments, 
+            comment_attachments=comment_attachments, 
+            comment_users=comment_users)
+    return bodyTemplate.render(body=threadRendered)
 
 
 # Load up Jinja2 templates
 templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
 templateEnv = jinja2.Environment(loader=templateLoader)
+#we want to zip collections in view
+templateEnv.globals.update(zip=zip)
+
 
 bodyTemplate = templateEnv.get_template("body.html")
 homeTemplate = templateEnv.get_template("home.html")

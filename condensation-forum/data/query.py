@@ -1,9 +1,16 @@
 """A collection of queries to enteract with the database"""
+import sys
 from .schema import User, File, Thread, Comment
 
 def extractOutput(queryResults):
     """convenience function to extract results from active query object"""
-    return [x.toDict() if x else None for x in queryResults]
+    if not queryResults:
+        return none
+    try:
+        return [x.toDict() if x else None for x in queryResults]
+    except TypeError:
+        return queryResults.toDict()
+    print("wtf.........", queryResults, file=sys.stderr)
 
 def getThreadsByCommentTime(dbSession):
     """get all threads ordered by the time they were last commented"""
@@ -63,6 +70,13 @@ def getThreadById(dbSession, tid):
     thread = dbSession.query(Thread).filter(Thread.id == tid)
     if thread:
         return thread.one_or_none()
+    return None
+
+def getCommentsByThread(dbSession, tid):
+    """gets all comments associated with a thread, ordered by time"""
+    comments = dbSession.query(Comment).filter(Comment.thread_id == tid).order_by(Comment.time_created)
+    if comments:
+        return comments.all()
     return None
 
 def getCommentById(dbSession, cid):

@@ -25,7 +25,7 @@
 
 
                 <!--uses thread and user colllections together in sequence-->
-                {% for thread, user, turl in threads_zip_users_zip_urls %}
+                {% for thread, user, turl in zip(threads, usernames, urls) %}
 
                 <div class="well">
                     <a href="{{ turl }}">
