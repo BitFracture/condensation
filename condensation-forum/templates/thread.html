@@ -11,7 +11,12 @@
                     </div>
                     <div class="row">
                         <div class="col-md-12"> 
-                            <em><b>{{op}}</b>, {{thread["time_modified"].strftime("%H:%M")}}</em> 
+                            <h4>{{op}}</h4> 
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12"> 
+                            <em>{{thread["time_modified"].strftime("%H:%M")}}</em> 
                         </div>
                     </div>
                     <div class="row well">
@@ -41,16 +46,21 @@
         </div>
     </div>
 </div>
+{%if comments%}
+{%for comment, user, attachments in zip(comments, comment_users, comment_attachments)%}
 <div class="panel panel-default">
     <div class="panel-body">
-        {%if comments%}
-        {%for comment, user, attachments in zip(comments, comment_users, comment_attachments)%}
         <div class="row">
             <div class="col-md-12">
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-md-12"> 
-                            <em><b>{{user}}</b>, {{comment["time_modified"].strftime("%H:%M")}}</em> 
+                            <h4>{{user}}</h4> 
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12"> 
+                            <em>{{comment["time_modified"].strftime("%H:%M")}}</em> 
                         </div>
                     </div>
                     <div class="row well">
@@ -77,15 +87,20 @@
                 </div>
             </div>
         </div>
-        {%endfor%}
-        {%else%}
+    </div>
+</div>
+{%endfor%}
+{%else%}
+<div class="panel panel-default">
+    <div class="panel-body">
         <div class="row">
             <div class="col-md-12">
                 <em>No Comments yet.</em>
             </div>
         </div>
-
-        {%endif%}
     </div>
+</div>
+
+{%endif%}
 </div>
 {% endblock %}

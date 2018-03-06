@@ -5,12 +5,12 @@ from .schema import User, File, Thread, Comment
 def extractOutput(queryResults):
     """convenience function to extract results from active query object"""
     if not queryResults:
-        return none
+        return None
     try:
         return [x.toDict() if x else None for x in queryResults]
     except TypeError:
         return queryResults.toDict()
-    print("wtf.........", queryResults, file=sys.stderr)
+    return None
 
 def getThreadsByCommentTime(dbSession):
     """get all threads ordered by the time they were last commented"""
