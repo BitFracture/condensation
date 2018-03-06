@@ -170,7 +170,7 @@ class File(_Base):
         out["name"] = self.name
         out["url"] = self.url
         out["time_created"] = _localize(self.time_created)
-        out["time_created"] = _localize(self.time_modified)
+        out["time_modified"] = _localize(self.time_modified)
         return out
 
 class Thread(_Base):

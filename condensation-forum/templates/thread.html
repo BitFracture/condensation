@@ -11,31 +11,81 @@
                     </div>
                     <div class="row">
                         <div class="col-md-12"> 
-                            <em>{{op}}</em> 
+                            <em><b>{{op}}</b>, {{thread["time_modified"].strftime("%H:%M")}}</em> 
                         </div>
                     </div>
                     <div class="row well">
-                            <p class="text-md-left">{{thread["body"]}}</p> 
+                        <p class="text-md-left">{{thread["body"]}}</p> 
                     </div>
-                    {% if thread_attachements%}
+                    {% if thread_attachments%}
                     <div class="row">
                         <div class="col-md-12"> 
                             <b>Attachments</b>
                         </div>
                     </div>
                     <div class="row" >
-                            <ul class="list-group">
-                                {%for attachment in thread_attachements%}
+                        <ul class="list-group">
+                            {%for attachment in thread_attachments%}
+                            <div class="col-md-12"> 
                                 <a href="{{attachment["url"]}}" class="list-group-item">
                                     {{attachment["name"]}}
                                 </a>
-                        {%endfor%}
-                            </ul>
+                            </div>
+                            {%endfor%}
+                        </ul>
                     </div>
                     {% endif %}
                 </div>
-             </div>
+
+            </div>
         </div>
+    </div>
+</div>
+<div class="panel panel-default">
+    <div class="panel-body">
+        {%if comments%}
+        {%for comment, user, attachments in zip(comments, comment_users, comment_attachments)%}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-md-12"> 
+                            <em><b>{{user}}</b>, {{comment["time_modified"].strftime("%H:%M")}}</em> 
+                        </div>
+                    </div>
+                    <div class="row well">
+                        <p class="text-md-left">{{comment["body"]}}</p> 
+                    </div>
+                    {% if attachments%}
+                    <div class="row">
+                        <div class="col-md-12"> 
+                            <b>Attachments</b>
+                        </div>
+                    </div>
+                    <div class="row" >
+                        <ul class="list-group">
+                            {%for attachment in attachments%}
+                            <div class="col-md-12"> 
+                                <a href="{{attachment["url"]}}" class="list-group-item">
+                                    {{attachment["name"]}}
+                                </a>
+                            </div>
+                            {%endfor%}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {%endfor%}
+        {%else%}
+        <div class="row">
+            <div class="col-md-12">
+                <em>No Comments yet.</em>
+            </div>
+        </div>
+
+        {%endif%}
     </div>
 </div>
 {% endblock %}

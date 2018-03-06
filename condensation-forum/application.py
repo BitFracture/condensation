@@ -96,7 +96,7 @@ def threadGetHandler(tid):
     thread = None
     with dataSessionMgr.session_scope() as dbSession:
         thread = query.getThreadById(dbSession, tid)
-        thread_attachements = query.extractOutput(thread.attachments)
+        thread_attachments = query.extractOutput(thread.attachments)
         op = thread.user.name
         post_attachments = query.extractOutput(thread.attachments)
         comments = query.getCommentsByThread(dbSession, thread.id)
@@ -107,7 +107,7 @@ def threadGetHandler(tid):
         
     threadRendered = threadTemplate.render(
             thread = thread, 
-            thread_attachements=thread_attachements,
+            thread_attachments=thread_attachments,
             op=op, 
             comments=comments, 
             comment_attachments=comment_attachments, 
