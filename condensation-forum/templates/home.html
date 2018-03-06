@@ -25,10 +25,10 @@
 
 
                 <!--uses thread and user colllections together in sequence-->
-                {% for thread, user in threads_zip_users %}
+                {% for thread, user, turl in threads_zip_users_zip_urls %}
 
                 <div class="well">
-                    <a href="{{ thread["id"] }}">
+                    <a href="{{ turl }}">
                         <div class="row">
                             <div class="col-md-4">
                                 <b>{{ thread["heading"] }}</b>

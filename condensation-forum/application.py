@@ -62,20 +62,19 @@ def indexGetHandler():
     Returns the template "home" wrapped by "body" served as HTML
     """
     threads = None
+    #grab threads ordered by time, and zip them with some usernames
     with dataSessionMgr.session_scope() as dbSession:
         threads = query.getThreadsByCommentTime(dbSession)
+        urls = [url_for("threadGetHandler", tid=thread.id) for thread in threads]
         users = [thread.user for thread in threads]
         threads = query.extractOutput(threads)
         users = query.extractOutput(users)
 
 
-    homeRendered = homeTemplate.render(threads_zip_users=zip(threads, users))
+
+    homeRendered = homeTemplate.render(threads_zip_users_zip_urls=zip(threads, users, urls))
 
     user = authManager.getUserData()
-    if user == None:
-        homeRendered += "<br/><br/>User is not logged in"
-    else:
-        homeRendered += "<br/><br/>User is: " + user['name']
 
     return bodyTemplate.render(body = homeRendered, user = user )
 
@@ -92,6 +91,10 @@ def indexPostHandler():
 
     return indexGetHandler()
 
+@application.route("/thread/<int:tid>)")
+def threadGetHandler(tid):
+    return bodyTemplate.render(body=threadTemplate.render())
+
 
 # Load up Jinja2 templates
 templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
@@ -99,6 +102,7 @@ templateEnv = jinja2.Environment(loader=templateLoader)
 
 bodyTemplate = templateEnv.get_template("body.html")
 homeTemplate = templateEnv.get_template("home.html")
+threadTemplate = templateEnv.get_template("thread.html")
 
 # Run Flask app now
 if __name__ == "__main__":
