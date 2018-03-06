@@ -1,59 +1,65 @@
 {% block body %}
-<div class="row">
-    <div class="col-md-10"> 
-        <h3>Condensation</h3> 
+<div class="well">
+    <div class="row">
+        <div class="col-md-10"> 
+            <h3>Condensation</h3> 
+        </div>
+        <div class="col-md-2">    
+            <button type="button" class="btn btn-primary ">Create Thread</button>  
+        </div>
     </div>
-    <div class="col-md-2">    
-        <button type="button" class="btn btn-primary">Create Thread</button>  
-    </div>
-
 </div>
-
 <div class="row">
     <div class="col-md-12">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-4"><b>Thread</b></div>
-                <div class="col-md-2"><b>Author</b></div>
-                <div class="col-md-2"><b>Replies</b></div>
-                <div class="col-md-2"><b>Updated</b></div>
-                <div class="col-md-2"><b>Created</b></div>
-            </div>
+        <div class="panel panel-default">
+            <div class="container-fluid">
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-4"><b>Thread</b></div>
+                        <div class="col-md-2"><b>Author</b></div>
+                        <div class="col-md-2"><b>Replies</b></div>
+                        <div class="col-md-2"><b>Updated</b></div>
+                        <div class="col-md-2"><b>Created</b></div>
+                    </div>
+                </div>
 
 
-            <!--uses thread and user colllections together in sequence-->
-            {% for thread, user in threads_zip_users %}
+                <!--uses thread and user colllections together in sequence-->
+                {% for thread, user in threads_zip_users %}
 
-            <a href="{{ thread["id"] }}">
+                <div class="well">
+                    <a href="{{ thread["id"] }}">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <b>{{ thread["heading"] }}</b>
+                            </div>
+                            <div class="col-md-2">
+                                {{ user["name"] }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ thread["reply_count"] }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ thread["time_last_reply"].strftime("%H:%M") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ thread["time_created"].strftime("%H:%M") }}
+                            </div>
+
+                        </div>
+                    </a>
+                </div>
+
+                {% else %}
                 <div class="row">
-                    <div class="col-md-4">
-                        <b>{{ thread["heading"] }}</b>
-                    </div>
-                    <div class="col-md-2">
-                        {{ user["name"] }}
-                    </div>
-                    <div class="col-md-2">
-                        {{ thread["reply_count"] }}
-                    </div>
-                    <div class="col-md-2">
-                        {{ thread["time_last_reply"].strftime("%H:%M") }}
-                    </div>
-                    <div class="col-md-2">
-                        {{ thread["time_created"].strftime("%H:%M") }}
-                    </div>
+                    <div class="col-md-12">
 
+                        <em>No entries here so far</em>
+                    </div>
                 </div>
-            </a>
+                {% endfor %}
 
-            {% else %}
-            <div class="row">
-                <div class="col-md-12">
-
-                    <em>No entries here so far</em>
-                </div>
             </div>
-            {% endfor %}
-
         </div>
     </div>
 </div
