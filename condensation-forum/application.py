@@ -64,9 +64,12 @@ def indexGetHandler():
     threads = None
     with dataSessionMgr.session_scope() as dbSession:
         threads = query.getThreadsByCommentTime(dbSession)
+        users = [thread.user for thread in threads]
         threads = query.extractOutput(threads)
+        users = query.extractOutput(users)
 
-    homeRendered = homeTemplate.render(threads=threads)
+
+    homeRendered = homeTemplate.render(threads_zip_users=zip(threads, users))
 
     user = authManager.getUserData()
     if user == None:
@@ -74,7 +77,7 @@ def indexGetHandler():
     else:
         homeRendered += "<br/><br/>User is: " + user['name']
 
-    return bodyTemplate.render(body = homeRendered, user = user)
+    return bodyTemplate.render(body = homeRendered, user = user )
 
 
 @application.route('/', methods=['POST'])

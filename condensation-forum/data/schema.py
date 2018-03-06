@@ -5,7 +5,8 @@ There are several attributes and several miscelaneous constraints.
 There is a brief synopsis for each entity in the documentation, however
 for up to date a specific details about constraints read the code """
     
-import datetime
+from datetime import datetime
+from dateutil import tz
 from sqlalchemy import (
         Table, 
         Column, 
@@ -38,6 +39,13 @@ attachments_comment = Table ( "attachments_comment",
         Column("file_id", ForeignKey("files.id"), primary_key=True),
         Column("comment_id", ForeignKey("comments.id"), primary_key=True))
 
+def _localize(time):
+    """private method for relocalizing
+    
+    This is a bit of a hack and only works for things in our local time zone"""
+    aware =  time.replace(tzinfo = tz.tzutc())
+    return aware.astimezone(tz.tzlocal())
+    
 
 
 
@@ -135,13 +143,13 @@ class File(_Base):
 
     time_created = Column(
             DateTime, 
-            default=datetime.datetime.utcnow(), 
+            default=datetime.utcnow(), 
             nullable=False)
 
     time_modified = Column(
             DateTime, 
-            default=datetime.datetime.utcnow(), 
-            onupdate=datetime.datetime.utcnow(), 
+            default=datetime.utcnow(), 
+            onupdate=datetime.utcnow(), 
             nullable=False)
 
     attached_threads = relationship(
@@ -161,8 +169,8 @@ class File(_Base):
         out["user_certificate"] = self.user_certificate
         out["name"] = self.name
         out["url"] = self.url
-        out["time_created"] = self.time_created
-        out["time_created"] = self.time_modified
+        out["time_created"] = _localize(self.time_created)
+        out["time_created"] = _localize(self.time_modified)
         return out
 
 class Thread(_Base):
@@ -210,13 +218,13 @@ class Thread(_Base):
 
     time_created = Column(
             DateTime, 
-            default=datetime.datetime.utcnow(), 
+            default=datetime.utcnow(), 
             nullable=False)
 
     time_modified = Column(
             DateTime, 
-            default=datetime.datetime.utcnow(), 
-            onupdate=datetime.datetime.utcnow(), 
+            default=datetime.utcnow(), 
+            onupdate=datetime.utcnow(), 
             nullable=False)
 
     time_last_reply = Column(DateTime)
@@ -243,9 +251,9 @@ class Thread(_Base):
         out["user_certificate"] = self.user_certificate
         out["heading"] = self.heading
         out["body"] = self.body 
-        out["time_created"] = self.time_created
-        out["time_modified"] = self.time_modified 
-        out["time_last_reply"] = self.time_last_reply 
+        out["time_created"] = _localize(self.time_created)
+        out["time_modified"] = _localize(self.time_modified)
+        out["time_last_reply"] = _localize(self.time_last_reply)
         out["reply_count"] = self.reply_count
         return out
         
@@ -254,7 +262,7 @@ class Thread(_Base):
 @event.listens_for(Thread.replies, 'append')
 def comment(thread, comment, initiator):
     """updates the last comment time, when a comment is added"""
-    thread.time_last_reply = datetime.datetime.utcnow()
+    thread.time_last_reply = datetime.utcnow()
  
 class Comment(_Base):
     """A user created comment on the thread.
@@ -302,13 +310,13 @@ class Comment(_Base):
 
     time_created = Column(
             DateTime, 
-            default=datetime.datetime.utcnow(), 
+            default=datetime.utcnow(), 
             nullable=False)
  
     time_modified = Column(
             DateTime, 
-            default=datetime.datetime.utcnow(), 
-            onupdate=datetime.datetime.utcnow(), 
+            default=datetime.utcnow(), 
+            onupdate=datetime.utcnow(), 
             nullable=False)
     
     attachments = relationship(
@@ -323,8 +331,8 @@ class Comment(_Base):
         out["user_certificate"] = self.user_certificate
         out["thread_id"] = self.thread_id
         out["body"] = self.body
-        out["time_created"] = self.time_created
-        out["time_modified"] = self.time_modified
-        out["user_certificate"] = self.user_certificate
+        out["time_created"] = localize(self.time_created)
+        out["time_modified"] = localize(self.time_modified)
+        out["user_certificate"] = localize(self.user_certificate)
         return out
 
