@@ -6,6 +6,7 @@ unauthenticated users and loading their authentication context if it exists. Add
 
 from flask import Flask, redirect, url_for, request, session
 from flask_oauthlib.client import OAuth
+from functools import wraps
 import sys
 
 class GoogleOAuthManager(object):
@@ -109,6 +110,7 @@ class GoogleOAuthManager(object):
         authenticated.
         """
         # This function REPLACES the original, and does auth first!
+        @wraps(func)
         def newAuthFunc():
             access_token = session.get('accessToken')
             if access_token is None:
@@ -133,6 +135,7 @@ class GoogleOAuthManager(object):
         fetching any properties.
         """
         # This function REPLACES the original, and does auth first!
+        @wraps(func)
         def newFunc():
             access_token = session.get('accessToken')
 
