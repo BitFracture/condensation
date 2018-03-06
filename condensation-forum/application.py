@@ -71,7 +71,8 @@ def indexGetHandler():
 
 
 
-    homeRendered = homeTemplate.render(threads=threads, urls=urls, usernames=usernames)
+    createThreadUrl = url_for("createThreadHandler")
+    homeRendered = homeTemplate.render(threads=threads, urls=urls, usernames=usernames, createUrl = createThreadUrl)
 
     user = authManager.getUserData()
 
@@ -90,8 +91,15 @@ def indexPostHandler():
 
     return indexGetHandler()
 
-@application.route("/thread/<int:tid>)")
+@application.route('/create/thread/', methods=['GET'])
+def createThreadHandler():
+    """Renders the thread creation screen """
+    rendered = createThreadTemplate.render()
+    return bodyTemplate.render(body=rendered)
+
+@application.route("/thread/<int:tid>)", methods=["GET"])
 def threadGetHandler(tid):
+    """Renders a thread, attachments, and all relevant comments"""
     #grab the thread with attachments
     thread = None
     with dataSessionMgr.session_scope() as dbSession:
@@ -125,6 +133,7 @@ templateEnv.globals.update(zip=zip)
 bodyTemplate = templateEnv.get_template("body.html")
 homeTemplate = templateEnv.get_template("home.html")
 threadTemplate = templateEnv.get_template("thread.html")
+createThreadTemplate = templateEnv.get_template("createThread.html")
 
 # Run Flask app now
 if __name__ == "__main__":
