@@ -2,9 +2,9 @@
 An AWS Python3+Flask web app.
 """
 
-from flask import Flask, redirect, url_for, request, session, flash
+from flask import Flask, redirect, url_for, request, session, flash,render_template
 from flask_oauthlib.client import OAuth
-import boto3
+import boto3,botocore
 import jinja2
 from boto3.dynamodb.conditions import Key, Attr
 import urllib.request
@@ -19,7 +19,7 @@ from data.session import SessionManager
 from data import query, schema
 from forms import CreateThreadForm, CreateCommentForm
 import inspect
-
+from werkzeug.utils import secure_filename
 
 ###############################################################################
 #FLASK CONFIG
@@ -54,6 +54,17 @@ authManager = GoogleOAuthManager(
         flaskApp     = application,
         clientId     = config.get("oauthClientId"),
         clientSecret = config.get("oauthClientSecret"))
+#This is the Upload requirement section
+bucket = s3.Bucket('condensation-forum')
+bucket_name = 'condensation-forum'
+s3client = boto3.client(
+   "s3",
+   aws_access_key_id=config.get("accessKey"),
+   aws_secret_access_key=config.get("secretKey")
+)
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+
+S3_LOCATION               = 'http://{}.s3.amazonaws.com/'.format(bucket)
 
 #database connection
 dataSessionMgr = SessionManager(
@@ -73,6 +84,7 @@ homeTemplate = templateEnv.get_template("home.html")
 threadTemplate = templateEnv.get_template("thread.html")
 createThreadTemplate = templateEnv.get_template("new-thread.html")
 createCommentTemplate = templateEnv.get_template("new-comment.html")
+fileManagerTemplate = templateEnv.get_template("fileManager.html")
 
 
 ###############################################################################
@@ -230,6 +242,40 @@ def logoutCallback():
     user = authManager.getUserData()
     print("User signed out: " + user["name"], file=sys.stderr)
 
+
+
+
+@application.route('/fileManager', methods=['GET', 'POST'])
+def fileManager():
+    if request.method == 'POST':
+        # do stuff when the form is submitted
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit a empty part without filename
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            s3client.upload_fileobj(file,bucket_name,file.filename,ExtraArgs={"ACL": "public-read","ContentType": file.content_type})
+            return redirect("/fileManager")
+
+        else:
+            return redirect("/fileManager")
+        
+        # redirect to end the POST handling
+        # the redirect can be to the same route or somewhere else
+        return redirect(url_for('home'))
+
+    # show the form, it wasn't submitted
+    return render_template('fileManager.html')
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS   
 
 # Run Flask app now
 if __name__ == "__main__":
