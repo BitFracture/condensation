@@ -96,6 +96,11 @@ dictionary returned for a valid user is formatted as follows:
 }
 ```
 
+Lastly, our app may need to do some preparation or provisioning upon user login, or housekeeping upon user logout. This
+is handled with `@googleOAuthManager.loginCallback` and `logoutCallback` respectively. Decorate a function with these
+(limit is 1 each) and the decorated function will be called with a valid user context directly after login, or
+immediately before logout. Attempting to assign more than one callback for login or logout will result in an exception.
+
 ## Views and Rendering
 
 Jinja2 and Flask are used to render HTML templates into responses and send them at the appropriate times.

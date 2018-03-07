@@ -14,7 +14,11 @@ class GoogleOAuthManager(object):
     # Preconfigured Google OAuth2 connection details
     BASE_URL         = 'https://www.googleapis.com/oauth2/v1/'
     AUTHORIZE_URL    = 'https://accounts.google.com/o/oauth2/auth'
-    TOKEN_PARAMS     = {'scope': 'https://www.googleapis.com/auth/userinfo.email'}
+    TOKEN_PARAMS     = {'scope': [
+            'https://www.googleapis.com/auth/userinfo.email',
+            'https://www.googleapis.com/auth/userinfo.profile'
+        ]
+    }
     ACCESS_TOKEN_URL = 'https://accounts.google.com/o/oauth2/token'
     LOGIN_ROUTE      = '/login'
     LOGOUT_ROUTE     = '/logout'
@@ -27,6 +31,10 @@ class GoogleOAuthManager(object):
     # Cached user properties
     userRetrievalEnabled = False
     userData = None
+
+    # Callback functions
+    loginCallbackFunction = None
+    logoutCallbackFunction = None
 
     def __init__(self, flaskApp, clientId, clientSecret):
 
@@ -48,6 +56,17 @@ class GoogleOAuthManager(object):
             """
             Logs out the user, then redirects them to the specified 'redirect' query string
             """
+
+            # Invoke the login redirect if the user is logged in and a callback is defined
+            access_token = session.get('accessToken')
+            if access_token is not None:
+                if (self.logoutCallbackFunction is not None):
+                    self.__populateUserData()
+                    self.userRetrievalEnabled = True
+                    self.logoutCallbackFunction()
+                    self.__clearUserData()
+                    self.userRetrievalEnabled = False
+
             redirectUrl = request.args.get('redirect', default = "/")
             session.clear()
             return redirect(redirectUrl)
@@ -84,9 +103,26 @@ class GoogleOAuthManager(object):
             # Gather information about this user
             session['accessToken'] = response['access_token']
             me = self.googleAuth.get('userinfo', token = {'access_token': session['accessToken']})
-            session['userName'] = me.data['name']
             session['userId'] = me.data['id']
             session['userPicture'] = me.data['picture']
+            session['userEmail'] = me.data['email']
+
+            # Determine a display name, order: Display Name, True Name, Email Address
+            session['userName'] = me.data['name'].strip()
+            if session['userName'] is None or len(session['userName']) <= 0:
+                if me.data['family_name'] is not None and me.data['given_name'] is not None:
+                    if len(me.data['family_name'].strip()) > 0 and len(me.data['given_name'].strip()) > 0:
+                        session['userName'] = me.data['family_name'].strip() + ", " + me.data['given_name'].strip()
+            if session['userName'] is None or len(session['userName']) <= 0:
+                session['userName'] = me.data['email']
+
+            # Invoke the login redirect if it has been defined
+            if (self.loginCallbackFunction is not None):
+                self.__populateUserData()
+                self.userRetrievalEnabled = True
+                self.loginCallbackFunction()
+                self.__clearUserData()
+                self.userRetrievalEnabled = False
 
             # Redirect the user to where they requested to be, otherwise redirect to home
             if 'userRedirect' in session:
@@ -101,6 +137,28 @@ class GoogleOAuthManager(object):
             googleAuth will automatically use this method to retrieve a token for transactions.
             """
             return session['access_token']
+
+    def loginCallback(self, func):
+        """
+        Decorates the function that will act as the callback after a user logs in. This function will have the same
+        user context as an @requireAuthentication.
+        """
+        if (self.loginCallbackFunction is None):
+            self.loginCallbackFunction = func
+        else:
+            raise Exception("Cannot assign a second function as a login callback. The limit is 1.")
+
+    def logoutCallback(self, func):
+        """
+        Decorates the function that will act as the callback after a user logs out. This function will have the same
+        user context as an @requireAuthentication. Note that this context is cleared immediately after this function,
+        so this function should be used to cleaning up session details, changing status indicators, or other related
+        clean-up tasks.
+        """
+        if (self.logoutCallbackFunction is None):
+            self.logoutCallbackFunction = func
+        else:
+            raise Exception("Cannot assign a second function as a logout callback. The limit is 1.")
 
     def requireAuthentication(self, func):
         """
@@ -157,9 +215,10 @@ class GoogleOAuthManager(object):
         Populates the contents of the user data from the current session.
         """
         self.userData = {
-            'name':    session['userName'],
-            'id':      session['userId'],
-            'picture': session['userPicture']
+            'name':    session.get('userName', ""),
+            'id':      session.get('userId', ""),
+            'picture': session.get('userPicture', ""),
+            'email':   session.get('userEmail', "")
         }
 
     def __clearUserData(self):
