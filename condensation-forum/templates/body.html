@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>{{ title }}</title>
-    <link rel="stylesheet"
-            href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
-            integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
-            crossorigin="anonymous">
-    <style>
-        *
-        {
-            border: 0;
-        }
+    <head>
+        <title>{{ title }}</title>
+        <link rel="stylesheet"
+              href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+              integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+              crossorigin="anonymous">
+        <style>
+*
+{
+    border: 0;
+}
         body
         {
             background-color: #222222 !important;
@@ -33,52 +33,56 @@
             display: block;
             border-top: 2px dashed #999999;
         }
-    </style>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-</head>
-<body>
-    <nav class="navbar navbar-default">
-      <div class="container-fluid">
-        <!-- Brand and toggle get grouped for better mobile display -->
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="/">Condensation Forum</a>
+        .form-control
+        {
+            resize:vertical
+        }
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="/">Condensation Forum</a>
+                </div>
+
+                <!-- Collapsable/responsive menu options -->
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+
+                    <ul class="nav navbar-nav navbar-right">
+
+                        {% if user %}
+                        <!-- User is logged in -->
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                <img src="{{ user.picture }}" style="height: 32px; border-radius: 16px; margin-bottom: -8px; margin-top: -8px;" /> {{user.name}} <span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/logout">Sign Out</a></li>
+                                <li role="separator" class="divider"></li>
+                                <li><a target="_blank" href="https://mail.google.com/mail/logout?hl=en">Sign Out of Google</a></li>
+                            </ul>
+                        </li>
+                        {% else %}
+                        <!-- User is not logged in -->
+                        <li><a href="/login">Log In</a></li>
+                        {% endif %}
+
+                    </ul>
+                </div><!-- /.navbar-collapse -->
+            </div><!-- /.container-fluid -->
+        </nav>
+        <div class="container">
+            <!--handle flashing-->
+            {{ body }}
         </div>
-
-        <!-- Collapsable/responsive menu options -->
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-
-          <ul class="nav navbar-nav navbar-right">
-
-            {% if user %}
-            <!-- User is logged in -->
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                  <img src="{{ user.picture }}" style="height: 32px; border-radius: 16px; margin-bottom: -8px; margin-top: -8px;" /> {{user.name}} <span class="caret"></span></a>
-              <ul class="dropdown-menu">
-                <li><a href="/logout">Sign Out</a></li>
-                <li role="separator" class="divider"></li>
-                <li><a target="_blank" href="https://mail.google.com/mail/logout?hl=en">Sign Out of Google</a></li>
-              </ul>
-            </li>
-            {% else %}
-            <!-- User is not logged in -->
-            <li><a href="/login">Log In</a></li>
-            {% endif %}
-
-          </ul>
-        </div><!-- /.navbar-collapse -->
-      </div><!-- /.container-fluid -->
-    </nav>
-
-    <div class="container">
-        {{ body }}
-    </div>
-</body>
+    </body>
 </html>

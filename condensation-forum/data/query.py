@@ -14,7 +14,7 @@ def extractOutput(queryResults):
 
 def getThreadsByCommentTime(dbSession):
     """get all threads ordered by the time they were last commented"""
-    threads = dbSession.query(Thread).order_by(Thread.time_last_reply)
+    threads = dbSession.query(Thread).order_by(Thread.time_last_reply.desc())
     if threads:
         return threads.all()
     return None

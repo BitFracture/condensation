@@ -227,7 +227,9 @@ class Thread(_Base):
             onupdate=datetime.utcnow(), 
             nullable=False)
 
-    time_last_reply = Column(DateTime)
+    time_last_reply = Column(
+            DateTime,
+            default=datetime.utcnow())
     
     @hybrid_property
     def reply_count(self):

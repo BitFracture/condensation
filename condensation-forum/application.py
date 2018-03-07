@@ -16,7 +16,8 @@ import sys
 from configLoader import ConfigLoader
 from googleOAuthManager import GoogleOAuthManager
 from data.session import SessionManager
-from data import query
+from data import query, schema
+from forms import CreateThreadForm
 
 
 
@@ -27,6 +28,8 @@ application = Flask(__name__)
 config = ConfigLoader("config.local.json")
 # Enable encrypted session, required for OAuth to stick
 application.secret_key = config.get("sessionSecret")
+#used for form validation
+application.config["SECRET_KEY"]=config.get("sessionSecret")
 
 # Set up service handles
 botoSession = boto3.Session(
@@ -67,15 +70,18 @@ def indexGetHandler():
         threads = query.getThreadsByCommentTime(dbSession)
         urls = [url_for("threadGetHandler", tid=thread.id) for thread in threads]
         usernames = [thread.user.name for thread in threads]
+        for user in usernames:
+            print("user", user, file=sys.stderr )
         threads = query.extractOutput(threads)
 
 
 
-    homeRendered = homeTemplate.render(threads=threads, urls=urls, usernames=usernames)
+    createThreadUrl = url_for("contentManagementThread")
+    homeRendered = homeTemplate.render(threads=threads, urls=urls, usernames=usernames, createUrl = createThreadUrl)
 
     user = authManager.getUserData()
 
-    return bodyTemplate.render(body = homeRendered, title = "Test Home", user = user)
+    return bodyTemplate.render(title="Home", body = homeRendered, user = user )
 
 
 @application.route('/', methods=['POST'])
@@ -90,8 +96,42 @@ def indexPostHandler():
 
     return indexGetHandler()
 
-@application.route("/thread/<int:tid>)")
+@application.route("/content-management/threads", methods=["GET", "POST"])
+@authManager.requireAuthentication
+def contentManagementThread():
+    """Renders the thread creation screen, creates thread if all data is validated"""
+
+    #do not allow unauthenticated users to submit
+    form = CreateThreadForm()
+
+    user = authManager.getUserData()
+    if not user:
+        abort(403)
+    if form.validate_on_submit():
+        tid = None
+        with dataSessionMgr.session_scope() as dbSession:
+
+            #TODO hook up actual user id, once account creation works
+            #this is the id of "Bilbo Baggins"
+            user = query.getUser(dbSession, "107225912631866552739")
+            thread = schema.Thread(heading=form.heading.data, body=form.body.data)
+            user.threads.append(thread)
+            #commits current transactions so we can grab the generated id
+            dbSession.flush()
+            tid = thread.id
+        #redirect to the created thread view
+        return redirect(url_for("threadGetHandler", tid=tid))
+
+    #error handling is done in the html forms
+    rendered = createThreadTemplate.render(form=form)
+    return bodyTemplate.render(title="Create Thread", body=rendered)
+
+
+
+
+@application.route("/thread/<int:tid>)", methods=["GET"])
 def threadGetHandler(tid):
+    """Renders a thread, attachments, and all relevant comments"""
     #grab the thread with attachments
     thread = None
     with dataSessionMgr.session_scope() as dbSession:
@@ -104,15 +144,15 @@ def threadGetHandler(tid):
         comment_users = [comment.user.name for comment in comments]
         comments = query.extractOutput(comments)
         thread = query.extractOutput(thread)
-        
+
     threadRendered = threadTemplate.render(
-            thread = thread, 
+            thread = thread,
             thread_attachments=thread_attachments,
-            op=op, 
-            comments=comments, 
-            comment_attachments=comment_attachments, 
+            op=op,
+            comments=comments,
+            comment_attachments=comment_attachments,
             comment_users=comment_users)
-    return bodyTemplate.render(body=threadRendered)
+    return bodyTemplate.render(title="Thread", body=threadRendered)
 
 
 # Load up Jinja2 templates
@@ -125,6 +165,7 @@ templateEnv.globals.update(zip=zip)
 bodyTemplate = templateEnv.get_template("body.html")
 homeTemplate = templateEnv.get_template("home.html")
 threadTemplate = templateEnv.get_template("thread.html")
+createThreadTemplate = templateEnv.get_template("contentManagement-thread.html")
 
 # Run Flask app now
 if __name__ == "__main__":
