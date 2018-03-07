@@ -17,7 +17,8 @@ from configLoader import ConfigLoader
 from googleOAuthManager import GoogleOAuthManager
 from data.session import SessionManager
 from data import query, schema
-from forms import CreateThreadForm
+from forms import CreateThreadForm, CreateCommentForm
+
 
 ###############################################################################
 #FLASK CONFIG
@@ -90,8 +91,6 @@ def indexGetHandler():
         threads = query.getThreadsByCommentTime(dbSession)
         urls = [url_for("threadGetHandler", tid=thread.id) for thread in threads]
         usernames = [thread.user.name for thread in threads]
-        for user in usernames:
-            print("user", user, file=sys.stderr )
         threads = query.extractOutput(threads)
 
 
@@ -145,6 +144,32 @@ def newThreadHandler():
     rendered = createThreadTemplate.render(form=form)
     return bodyTemplate.render(title="Create Thread", body=rendered)
 
+@application.route("/new-comment?<int:tid>", methods=["GET", "POST"])
+@authManager.requireAuthentication
+def newCommentHandler(tid):
+    """Renders the thread creation screen, creates thread if all data is validated"""
+
+    #do not allow unauthenticated users to submit
+    form = CreateCommentForm()
+
+    user = authManager.getUserData()
+    if not user:
+        abort(403)
+    if form.validate_on_submit():
+        with dataSessionMgr.session_scope() as dbSession:
+            #TODO hook up actual user id, once account creation works
+            #this is the id of "Bilbo Baggins"
+            user = query.getUser(dbSession, "107225912631866552739")
+            thread = query.getThreadById(dbSession, tid)
+            thread.replies.append(schema.Comment(user=user, body=form.body.data))
+
+        #redirect to the created thread view
+        return redirect(url_for("threadGetHandler", tid=tid))
+
+    #error handling is done in the html forms
+    rendered = createCommentTemplate.render(form=form)
+    return bodyTemplate.render(title="Reply", body=rendered)
+
 
 
 
@@ -157,6 +182,8 @@ def threadGetHandler(tid):
         thread = query.getThreadById(dbSession, tid)
         thread_attachments = query.extractOutput(thread.attachments)
         op = thread.user.name
+
+        replyUrl = url_for("newCommentHandler", tid=thread.id)
         post_attachments = query.extractOutput(thread.attachments)
         comments = query.getCommentsByThread(dbSession, thread.id)
         comment_attachments = [query.extractOutput(comment.attachments) for comment in comments]
@@ -170,7 +197,8 @@ def threadGetHandler(tid):
             op=op, 
             comments=comments, 
             comment_attachments=comment_attachments, 
-            comment_users=comment_users)
+            comment_users=comment_users,
+            replyUrl=replyUrl)
     return bodyTemplate.render(title="Thread", body=threadRendered)
 
 
