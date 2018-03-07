@@ -16,7 +16,7 @@ import sys
 from configLoader import ConfigLoader
 from googleOAuthManager import GoogleOAuthManager
 from data.session import SessionManager
-from data import query
+from data import query, schema
 from forms import CreateThreadForm
 
 
@@ -97,7 +97,7 @@ def indexPostHandler():
 @application.route("/content-management/threads", methods=["GET", "POST"])
 @authManager.requireAuthentication
 def contentManagementThread():
-    """Renders the thread creation screen """
+    """Renders the thread creation screen, creates thread if all data is validated"""
 
     #do not allow unauthenticated users to submit
     form = CreateThreadForm()
@@ -108,11 +108,18 @@ def contentManagementThread():
     if form.validate_on_submit():
         tid = None
         with dataSessionMgr.session_scope() as dbSession:
-            user = query.getUser(user.id)
-            thread = Thread(heading=form.heading, body=form.body)
+            #TODO hook up actual user id, once account creation works
+            #this is the id of "Bilbo Baggins"
+            user = query.getUser(dbSession, "107225912631866552739")
+            thread = schema.Thread(heading=form.heading.data, body=form.body.data)
             user.threads.append(thread)
+            #commits current transactions so we can grab the generated id
+            dbSession.flush()
             tid = thread.id
-        return redirect(url_for("threadGetHandler"), tid=tid)
+            print("tid check", tid, file=sys.stderr)
+        #redirect to the created thread view
+        return redirect(url_for("threadGetHandler", tid=tid))
+
 
     #error handling is done in the html forms
     rendered = createThreadTemplate.render(form=form)
