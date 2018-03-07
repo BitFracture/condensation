@@ -74,16 +74,16 @@ def indexGetHandler():
 
 
 
-    createThreadUrl = url_for("createThreadHandler")
+    createThreadUrl = url_for("contentManagementThread")
     homeRendered = homeTemplate.render(threads=threads, urls=urls, usernames=usernames, createUrl = createThreadUrl)
 
     user = authManager.getUserData()
 
-    return bodyTemplate.render(body = homeRendered, user = user )
+    return bodyTemplate.render(title="Home", body = homeRendered, user = user )
 
 
-@authManager.requireAuthentication
 @application.route('/', methods=['POST'])
+@authManager.requireAuthentication
 def indexPostHandler():
     """
     Outputs the user's submission to console and returns index GET response.
@@ -94,23 +94,32 @@ def indexPostHandler():
 
     return indexGetHandler()
 
+@application.route("/content-management/threads", methods=["GET", "POST"])
 @authManager.requireAuthentication
-@application.route("/create/thread/", methods=["GET", "POST"])
-def createThreadHandler():
+def contentManagementThread():
     """Renders the thread creation screen """
 
     #do not allow unauthenticated users to submit
     form = CreateThreadForm()
 
+    user = authManager.getUserData()
+    if not user:
+        abort(403)
     if form.validate_on_submit():
-        #TODO validate files and recreate the form 
-        return redirect(url_for("indexPostHandler"))
+        tid = None
+        with dataSessionMgr.session_scope() as dbSession:
+            user = query.getUser(user.id)
+            thread = Thread(heading=form.heading, body=form.body)
+            user.threads.append(thread)
+            tid = thread.id
+        return redirect(url_for("threadGetHandler"), tid=tid)
 
-    #TODO error handling
-
-    #Render it and submit to user
+    #error handling is done in the html forms
     rendered = createThreadTemplate.render(form=form)
-    return bodyTemplate.render(body=rendered)
+    return bodyTemplate.render(title="Create Thread", body=rendered)
+
+
+
 
 @application.route("/thread/<int:tid>)", methods=["GET"])
 def threadGetHandler(tid):
@@ -135,7 +144,7 @@ def threadGetHandler(tid):
             comments=comments, 
             comment_attachments=comment_attachments, 
             comment_users=comment_users)
-    return bodyTemplate.render(body=threadRendered)
+    return bodyTemplate.render(title="Thread", body=threadRendered)
 
 
 # Load up Jinja2 templates
@@ -148,7 +157,7 @@ templateEnv.globals.update(zip=zip)
 bodyTemplate = templateEnv.get_template("body.html")
 homeTemplate = templateEnv.get_template("home.html")
 threadTemplate = templateEnv.get_template("thread.html")
-createThreadTemplate = templateEnv.get_template("createThread.html")
+createThreadTemplate = templateEnv.get_template("contentManagement-thread.html")
 
 # Run Flask app now
 if __name__ == "__main__":
