@@ -70,6 +70,8 @@ def indexGetHandler():
         threads = query.getThreadsByCommentTime(dbSession)
         urls = [url_for("threadGetHandler", tid=thread.id) for thread in threads]
         usernames = [thread.user.name for thread in threads]
+        for user in usernames:
+            print("user", user, file=sys.stderr )
         threads = query.extractOutput(threads)
 
 
@@ -116,7 +118,6 @@ def contentManagementThread():
             #commits current transactions so we can grab the generated id
             dbSession.flush()
             tid = thread.id
-            print("tid check", tid, file=sys.stderr)
         #redirect to the created thread view
         return redirect(url_for("threadGetHandler", tid=tid))
 
