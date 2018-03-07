@@ -18,6 +18,7 @@ from googleOAuthManager import GoogleOAuthManager
 from data.session import SessionManager
 from data import query, schema
 from forms import CreateThreadForm, CreateCommentForm
+import inspect
 
 
 ###############################################################################
@@ -32,6 +33,7 @@ config = ConfigLoader("config.local.json")
 application.secret_key = config.get("sessionSecret")
 #used for form validation
 application.config["SECRET_KEY"]=config.get("sessionSecret")
+#application.config["SERVER_NAME"]=config.get("serverUrl")
 
 # Set up service handles
 botoSession = boto3.Session(
@@ -93,27 +95,21 @@ def indexGetHandler():
         usernames = [thread.user.name for thread in threads]
         threads = query.extractOutput(threads)
 
-
-
     createThreadUrl = url_for("newThreadHandler")
-    homeRendered = homeTemplate.render(threads=threads, urls=urls, usernames=usernames, createUrl = createThreadUrl)
+    homeRendered = homeTemplate.render(
+            threads=threads,
+            urls=urls,
+            usernames=usernames,
+            createUrl=createThreadUrl)
 
     user = authManager.getUserData()
 
-    return bodyTemplate.render(title="Home", body = homeRendered, user = user )
+    return bodyTemplate.render(
+            title="Home",
+            body=homeRendered,
+            user=user,
+            location=request.url)
 
-
-@application.route('/', methods=['POST'])
-@authManager.requireAuthentication
-def indexPostHandler():
-    """
-    Outputs the user's submission to console and returns index GET response.
-    """
-
-    print("User's first box: " + request.form["box1"], file=sys.stderr)
-    print("User's second box: " + request.form["box2"], file=sys.stderr)
-
-    return indexGetHandler()
 
 @application.route("/new-thread", methods=["GET", "POST"])
 @authManager.requireAuthentication
@@ -142,8 +138,14 @@ def newThreadHandler():
         return redirect(url_for("threadGetHandler", tid=tid))
 
     #error handling is done in the html forms
+    user = authManager.getUserData()
     rendered = createThreadTemplate.render(form=form)
-    return bodyTemplate.render(title="Create Thread", body=rendered)
+    return bodyTemplate.render(
+            title="Create Thread",
+            body=rendered,
+            user=user,
+            location=url_for('indexGetHandler', _external=True))
+
 
 @application.route("/new-comment?<int:tid>", methods=["GET", "POST"])
 @authManager.requireAuthentication
@@ -168,10 +170,17 @@ def newCommentHandler(tid):
         return redirect(url_for("threadGetHandler", tid=tid))
 
     #error handling is done in the html forms
+    user = authManager.getUserData()
     rendered = createCommentTemplate.render(form=form)
-    return bodyTemplate.render(title="Reply", body=rendered)
+    return bodyTemplate.render(
+            title="Reply",
+            body=rendered,
+            user=user,
+            location=url_for('indexGetHandler', _external=True))
+
 
 @application.route("/thread/<int:tid>)", methods=["GET"])
+@authManager.enableAuthentication
 def threadGetHandler(tid):
     """Renders a thread, attachments, and all relevant comments"""
     #grab the thread with attachments
@@ -189,15 +198,21 @@ def threadGetHandler(tid):
         comments = query.extractOutput(comments)
         thread = query.extractOutput(thread)
 
+    user = authManager.getUserData();
     threadRendered = threadTemplate.render(
-            thread = thread,
+            thread=thread,
             thread_attachments=thread_attachments,
             op=op,
             comments=comments,
             comment_attachments=comment_attachments,
             comment_users=comment_users,
             replyUrl=replyUrl)
-    return bodyTemplate.render(title="Thread", body=threadRendered)
+    return bodyTemplate.render(
+            title="Thread",
+            body=threadRendered,
+            user=user,
+            location=request.url)
+
 
 @authManager.loginCallback
 def loginCallback():
@@ -207,6 +222,7 @@ def loginCallback():
     user = authManager.getUserData()
     print("User signed in: " + user["name"], file=sys.stderr)
 
+
 @authManager.logoutCallback
 def logoutCallback():
     """
@@ -214,6 +230,7 @@ def logoutCallback():
     """
     user = authManager.getUserData()
     print("User signed out: " + user["name"], file=sys.stderr)
+
 
 # Run Flask app now
 if __name__ == "__main__":
