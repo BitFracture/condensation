@@ -171,9 +171,6 @@ def newCommentHandler(tid):
     rendered = createCommentTemplate.render(form=form)
     return bodyTemplate.render(title="Reply", body=rendered)
 
-
-
-
 @application.route("/thread/<int:tid>)", methods=["GET"])
 def threadGetHandler(tid):
     """Renders a thread, attachments, and all relevant comments"""
@@ -202,6 +199,21 @@ def threadGetHandler(tid):
             replyUrl=replyUrl)
     return bodyTemplate.render(title="Thread", body=threadRendered)
 
+@authManager.loginCallback
+def loginCallback():
+    """
+    This is invoked when a user logs in, before any other logic.
+    """
+    user = authManager.getUserData()
+    print("User signed in: " + user["name"], file=sys.stderr)
+
+@authManager.logoutCallback
+def logoutCallback():
+    """
+    This is invoked when a user logs in, before any other logic.
+    """
+    user = authManager.getUserData()
+    print("User signed out: " + user["name"], file=sys.stderr)
 
 # Run Flask app now
 if __name__ == "__main__":
