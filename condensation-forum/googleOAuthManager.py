@@ -14,7 +14,11 @@ class GoogleOAuthManager(object):
     # Preconfigured Google OAuth2 connection details
     BASE_URL         = 'https://www.googleapis.com/oauth2/v1/'
     AUTHORIZE_URL    = 'https://accounts.google.com/o/oauth2/auth'
-    TOKEN_PARAMS     = {'scope': 'https://www.googleapis.com/auth/userinfo.email'}
+    TOKEN_PARAMS     = {'scope': [
+            'https://www.googleapis.com/auth/userinfo.email',
+            'https://www.googleapis.com/auth/userinfo.profile'
+        ]
+    }
     ACCESS_TOKEN_URL = 'https://accounts.google.com/o/oauth2/token'
     LOGIN_ROUTE      = '/login'
     LOGOUT_ROUTE     = '/logout'
@@ -101,6 +105,7 @@ class GoogleOAuthManager(object):
             me = self.googleAuth.get('userinfo', token = {'access_token': session['accessToken']})
             session['userId'] = me.data['id']
             session['userPicture'] = me.data['picture']
+            session['userEmail'] = me.data['email']
 
             # Determine a display name, order: Display Name, True Name, Email Address
             session['userName'] = me.data['name'].strip()
@@ -210,9 +215,10 @@ class GoogleOAuthManager(object):
         Populates the contents of the user data from the current session.
         """
         self.userData = {
-            'name':    session['userName'],
-            'id':      session['userId'],
-            'picture': session['userPicture']
+            'name':    session.get('userName', ""),
+            'id':      session.get('userId', ""),
+            'picture': session.get('userPicture', ""),
+            'email':   session.get('userEmail', "")
         }
 
     def __clearUserData(self):
