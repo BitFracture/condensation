@@ -128,6 +128,7 @@ def newThreadHandler():
     if form.validate_on_submit():
         tid = None
         with dataSessionMgr.session_scope() as dbSession:
+
             #TODO hook up actual user id, once account creation works
             #this is the id of "Bilbo Baggins"
             user = query.getUser(dbSession, "107225912631866552739")
@@ -161,13 +162,13 @@ def threadGetHandler(tid):
         comment_users = [comment.user.name for comment in comments]
         comments = query.extractOutput(comments)
         thread = query.extractOutput(thread)
-        
+
     threadRendered = threadTemplate.render(
-            thread = thread, 
+            thread = thread,
             thread_attachments=thread_attachments,
-            op=op, 
-            comments=comments, 
-            comment_attachments=comment_attachments, 
+            op=op,
+            comments=comments,
+            comment_attachments=comment_attachments,
             comment_users=comment_users)
     return bodyTemplate.render(title="Thread", body=threadRendered)
 
