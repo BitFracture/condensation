@@ -62,9 +62,6 @@ s3client = boto3.client(
    aws_access_key_id=config.get("accessKey"),
    aws_secret_access_key=config.get("secretKey")
 )
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
-
-S3_LOCATION               = 'http://{}.s3.amazonaws.com/'.format(bucket)
 
 #database connection
 dataSessionMgr = SessionManager(
@@ -258,7 +255,7 @@ def fileManager():
         if file.filename == '':
             flash('No selected file')
             return redirect(request.url)
-        if file and allowed_file(file.filename):
+        if file!= '':
             filename = secure_filename(file.filename)
             s3client.upload_fileobj(file,bucket_name,file.filename,ExtraArgs={"ACL": "public-read","ContentType": file.content_type})
             return redirect("/fileManager")
@@ -272,10 +269,6 @@ def fileManager():
 
     # show the form, it wasn't submitted
     return render_template('fileManager.html')
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS   
 
 # Run Flask app now
 if __name__ == "__main__":
