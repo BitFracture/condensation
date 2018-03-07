@@ -74,7 +74,7 @@ def getThreadById(dbSession, tid):
 
 def getCommentsByThread(dbSession, tid):
     """gets all comments associated with a thread, ordered by time"""
-    comments = dbSession.query(Comment).filter(Comment.thread_id == tid).order_by(Comment.time_created)
+    comments = dbSession.query(Comment).filter(Comment.thread_id == tid).order_by(Comment.time_created.desc())
     if comments:
         return comments.all()
     return None

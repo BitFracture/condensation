@@ -156,13 +156,13 @@ class File(_Base):
 
     time_created = Column(
             DateTime, 
-            default=datetime.utcnow(), 
+            default=datetime.utcnow, 
             nullable=False)
 
     time_modified = Column(
             DateTime, 
-            default=datetime.utcnow(), 
-            onupdate=datetime.utcnow(), 
+            default=datetime.utcnow, 
+            onupdate=datetime.utcnow, 
             nullable=False)
 
     attached_threads = relationship(
@@ -232,18 +232,18 @@ class Thread(_Base):
 
     time_created = Column(
             DateTime, 
-            default=datetime.utcnow(), 
+            default=datetime.utcnow, 
             nullable=False)
 
     time_modified = Column(
             DateTime, 
-            default=datetime.utcnow(), 
-            onupdate=datetime.utcnow(), 
+            default=datetime.utcnow, 
+            onupdate=datetime.utcnow, 
             nullable=False)
 
     time_last_reply = Column(
             DateTime,
-            default=datetime.utcnow())
+            default=datetime.utcnow)
     
     @hybrid_property
     def reply_count(self):
@@ -326,13 +326,13 @@ class Comment(_Base):
 
     time_created = Column(
             DateTime, 
-            default=datetime.utcnow(), 
+            default=datetime.utcnow, 
             nullable=False)
  
     time_modified = Column(
             DateTime, 
-            default=datetime.utcnow(), 
-            onupdate=datetime.utcnow(), 
+            default=datetime.utcnow, 
+            onupdate=datetime.utcnow, 
             nullable=False)
     
     attachments = relationship(
