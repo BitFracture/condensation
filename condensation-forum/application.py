@@ -70,6 +70,8 @@ bodyTemplate = templateEnv.get_template("body.html")
 homeTemplate = templateEnv.get_template("home.html")
 threadTemplate = templateEnv.get_template("thread.html")
 createThreadTemplate = templateEnv.get_template("new-thread.html")
+createCommentTemplate = templateEnv.get_template("new-comment.html")
+
 
 ###############################################################################
 #END CONFIG

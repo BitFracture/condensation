@@ -7,3 +7,8 @@ class CreateThreadForm(FlaskForm):
     heading = StringField("Heading", [validators.required(), validators.length(max=120)])
     body = TextAreaField("Body", [validators.required(), validators.length(max=200000)])
     submit = SubmitField("Create Thread")
+
+class CreateCommentForm(FlaskForm):
+    """Class representing the create comment form"""
+    body = TextAreaField("Body", [validators.required(), validators.length(max=200000)])
+    submit = SubmitField("Reply")
