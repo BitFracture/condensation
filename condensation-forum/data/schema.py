@@ -53,22 +53,27 @@ class User(_Base):
     """ A user on the site.
 
     Attributes:
-        - certificate (pk): the google authentication id for the user
+        - id (pk): the google authentication id for the user
         - name: the display name for the user
+        - profile_picture: the url to their profile photo
         - uploads: file uploads
         - threads: the threads a user has created
         - comments: the comments the user has posted"""
 
     __tablename__ = "users"
     
-    certificate = Column(
+    id = Column(
             String(21), 
-            CheckConstraint("length(certificate) = 21"), 
+            CheckConstraint("length(id) = 21"), 
             primary_key=True)
 
     name = Column(
             String(60), 
             CheckConstraint("length(name) > 0"), 
+            nullable=False)
+    
+    profile_picture = Column(
+            String(250),
             nullable=False)
 
     uploads = relationship(
@@ -89,7 +94,8 @@ class User(_Base):
     def toDict(self):
         """returns dict of primary attributes"""
         out = {}
-        out["certificate"] = self.certificate
+        out["id"] = self.id
+        out["profile_picture"] = self.profile_picture
         out["name"] = self.name
         return out
 
@@ -102,9 +108,10 @@ class File(_Base):
     Attributes:
         - id (pk): the generated id for the file
         - user: the user that generated the file
-        - user_certificate (fk): their google id
+        - user_id (fk): their google id
         - name: the symbolic file name
         - url: the blob location of the file
+        - cloud_key: the azure key to the file
         - time_created: the time the file was created
         - time_modified: the last time the file was modified
         - attached_threads: the threads the file is attached to
@@ -117,14 +124,14 @@ class File(_Base):
             Integer, 
             primary_key=True)
 
-    user_certificate = Column(
+    user_id = Column(
             String(21), 
-            ForeignKey(User.certificate), 
+            ForeignKey(User.id), 
             nullable=False)
 
     user = relationship(
             "User", 
-            foreign_keys="File.user_certificate",
+            foreign_keys="File.user_id",
             back_populates="uploads")
 
     name = Column(
@@ -133,11 +140,17 @@ class File(_Base):
             nullable=False)
 
     #no duplicate file names for user
-    __table_args__ = (UniqueConstraint("user_certificate", "name", name="_uc_user_name"),)
+    __table_args__ = (UniqueConstraint("user_id", "name", name="_uc_user_name"),)
 
     url = Column(
-            String(101), 
+            String(250), 
             CheckConstraint("length(url) > 1"), 
+            nullable=False,
+            unique=True)
+
+    cloud_key = Column(
+            String(60), 
+            CheckConstraint("length(cloud_key) > 1"), 
             nullable=False,
             unique=True)
 
@@ -166,9 +179,10 @@ class File(_Base):
         """returns dict of primary attributes"""
         out = {}
         out["id"] = self.id
-        out["user_certificate"] = self.user_certificate
+        out["user_id"] = self.user_id
         out["name"] = self.name
         out["url"] = self.url
+        out["cloud_key"] = self.cloud_key
         out["time_created"] = _localize(self.time_created)
         out["time_modified"] = _localize(self.time_modified)
         return out
@@ -179,7 +193,7 @@ class Thread(_Base):
     Attributes:
         - id (pk): the generated id of the thread
         - user: the original poster
-        - user_certificate(fk): the id of original poster (also number of op's mom?)
+        - user_id(fk): the id of original poster (also number of op's mom?)
         - heading: the display heading of the post
         - body: the body of the post
         - time_created: time created
@@ -196,14 +210,14 @@ class Thread(_Base):
             Integer, 
             primary_key=True)
 
-    user_certificate = Column(
+    user_id = Column(
             String(21), 
-            ForeignKey(User.certificate), 
+            ForeignKey(User.id), 
             nullable=False)
 
     user = relationship(
             "User", 
-            foreign_keys="Thread.user_certificate",
+            foreign_keys="Thread.user_id",
             back_populates="threads")
 
     heading = Column(
@@ -250,7 +264,7 @@ class Thread(_Base):
     def toDict(self):
         out = {}
         out["id"] = self.id
-        out["user_certificate"] = self.user_certificate
+        out["user_id"] = self.user_id
         out["heading"] = self.heading
         out["body"] = self.body 
         out["time_created"] = _localize(self.time_created)
@@ -272,7 +286,7 @@ class Comment(_Base):
     Attributes:
         - id(pk): the generated id of the comment
         - user: the user that posted the comment
-        - user_certificate(fk): the id of the user
+        - user_id(fk): the id of the user
         - thread: the thread the comment is responding to
         - thread_id(fk): the generated id of the thread
         - body: the body of the post 
@@ -287,12 +301,12 @@ class Comment(_Base):
 
     user = relationship(
             "User", 
-            foreign_keys="Comment.user_certificate",
+            foreign_keys="Comment.user_id",
             back_populates="comments")
 
-    user_certificate = Column(
+    user_id = Column(
             String(21), 
-            ForeignKey(User.certificate), 
+            ForeignKey(User.id), 
             nullable=False)
 
     thread = relationship(
@@ -330,11 +344,11 @@ class Comment(_Base):
         """populates a dictionary with our primary attributes"""
         out = {}
         out["id"] = self.id
-        out["user_certificate"] = self.user_certificate
+        out["user_id"] = self.user_id
         out["thread_id"] = self.thread_id
         out["body"] = self.body
         out["time_created"] = _localize(self.time_created)
         out["time_modified"] = _localize(self.time_modified)
-        out["user_certificate"] = self.user_certificate
+        out["user_id"] = self.user_id
         return out
 

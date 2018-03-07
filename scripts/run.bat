@@ -13,11 +13,11 @@ call .\.virtualenv\Scripts\activate.bat py35
 
 pushd condensation-forum
 
-echo installing prerequisites
+echo Installing prerequisites
 echo.
 pip3 install -r requirements.txt
 echo.
-echo running application
+echo Running application
 echo.
 python3 ./application.py
 

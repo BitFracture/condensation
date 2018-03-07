@@ -19,8 +19,9 @@ from data.session import SessionManager
 from data import query, schema
 from forms import CreateThreadForm
 
-
-
+###############################################################################
+#FLASK CONFIG
+###############################################################################
 
 # This is the EB application, calling directly into Flask
 application = Flask(__name__)
@@ -58,6 +59,23 @@ dataSessionMgr = SessionManager(
         config.get("dbPassword"),
         config.get("dbEndpoint"))
 
+# Load up Jinja2 templates
+templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
+templateEnv = jinja2.Environment(loader=templateLoader)
+#we want to zip collections in view
+templateEnv.globals.update(zip=zip)
+
+
+bodyTemplate = templateEnv.get_template("body.html")
+homeTemplate = templateEnv.get_template("home.html")
+threadTemplate = templateEnv.get_template("thread.html")
+createThreadTemplate = templateEnv.get_template("new-thread.html")
+
+###############################################################################
+#END CONFIG
+###############################################################################
+
+
 @application.route('/', methods=['GET'])
 @authManager.enableAuthentication
 def indexGetHandler():
@@ -76,7 +94,7 @@ def indexGetHandler():
 
 
 
-    createThreadUrl = url_for("contentManagementThread")
+    createThreadUrl = url_for("newThreadHandler")
     homeRendered = homeTemplate.render(threads=threads, urls=urls, usernames=usernames, createUrl = createThreadUrl)
 
     user = authManager.getUserData()
@@ -96,9 +114,9 @@ def indexPostHandler():
 
     return indexGetHandler()
 
-@application.route("/content-management/threads", methods=["GET", "POST"])
+@application.route("/new-thread", methods=["GET", "POST"])
 @authManager.requireAuthentication
-def contentManagementThread():
+def newThreadHandler():
     """Renders the thread creation screen, creates thread if all data is validated"""
 
     #do not allow unauthenticated users to submit
@@ -154,18 +172,6 @@ def threadGetHandler(tid):
             comment_users=comment_users)
     return bodyTemplate.render(title="Thread", body=threadRendered)
 
-
-# Load up Jinja2 templates
-templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
-templateEnv = jinja2.Environment(loader=templateLoader)
-#we want to zip collections in view
-templateEnv.globals.update(zip=zip)
-
-
-bodyTemplate = templateEnv.get_template("body.html")
-homeTemplate = templateEnv.get_template("home.html")
-threadTemplate = templateEnv.get_template("thread.html")
-createThreadTemplate = templateEnv.get_template("contentManagement-thread.html")
 
 # Run Flask app now
 if __name__ == "__main__":
