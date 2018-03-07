@@ -99,9 +99,17 @@ class GoogleOAuthManager(object):
             # Gather information about this user
             session['accessToken'] = response['access_token']
             me = self.googleAuth.get('userinfo', token = {'access_token': session['accessToken']})
-            session['userName'] = me.data['name']
             session['userId'] = me.data['id']
             session['userPicture'] = me.data['picture']
+
+            # Determine a display name, order: Display Name, True Name, Email Address
+            session['userName'] = me.data['name'].strip()
+            if session['userName'] is None or len(session['userName']) <= 0:
+                if me.data['family_name'] is not None and me.data['given_name'] is not None:
+                    if len(me.data['family_name'].strip()) > 0 and len(me.data['given_name'].strip()) > 0:
+                        session['userName'] = me.data['family_name'].strip() + ", " + me.data['given_name'].strip()
+            if session['userName'] is None or len(session['userName']) <= 0:
+                session['userName'] = me.data['email']
 
             # Invoke the login redirect if it has been defined
             if (self.loginCallbackFunction is not None):

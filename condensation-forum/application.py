@@ -33,7 +33,6 @@ config = ConfigLoader("config.local.json")
 application.secret_key = config.get("sessionSecret")
 #used for form validation
 application.config["SECRET_KEY"]=config.get("sessionSecret")
-#application.config["SERVER_NAME"]=config.get("serverUrl")
 
 # Set up service handles
 botoSession = boto3.Session(
