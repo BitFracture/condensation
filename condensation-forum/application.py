@@ -15,6 +15,10 @@ import random
 import sys
 from configLoader import ConfigLoader
 from googleOAuthManager import GoogleOAuthManager
+from data.session import SessionManager
+from data import query
+
+
 
 
 # This is the EB application, calling directly into Flask
@@ -45,6 +49,11 @@ authManager = GoogleOAuthManager(
         clientId     = config.get("oauthClientId"),
         clientSecret = config.get("oauthClientSecret"))
 
+#database connection
+dataSessionMgr = SessionManager(
+        config.get("dbUser"),
+        config.get("dbPassword"),
+        config.get("dbEndpoint"))
 
 @application.route('/', methods=['GET'])
 @authManager.enableAuthentication
@@ -59,6 +68,14 @@ def indexGetHandler():
         homeRendered += "<br/><br/>User is not logged in"
     else:
         homeRendered += "<br/><br/>User is: " + user['name']
+
+    with dataSessionMgr.session_scope() as dbSession:
+        threads = query.getThreadsByCommentTime(dbSession)
+        if threads:
+            for thread in threads:
+                homeRendered += "<p><b>%s</b> %s</p>" % (thread.heading, thread.user.name) 
+        else:
+            homeRendered += "<p>No threads found</p>"
     return bodyTemplate.render(body = homeRendered, title = "Test Home", user = user)
 
 
