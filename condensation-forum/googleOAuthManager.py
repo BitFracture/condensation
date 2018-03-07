@@ -23,7 +23,6 @@ class GoogleOAuthManager(object):
     # The OAuth client
     oath = None
     googleAuth = None
-    autoGenFunctionId = 0
 
     # Cached user properties
     userRetrievalEnabled = False
@@ -124,6 +123,7 @@ class GoogleOAuthManager(object):
                 self.userRetrievalEnabled = False
                 return toReturn
 
+        # Return the auth-enhanced function, which nests the original
         return newAuthFunc
 
     def enableAuthentication(self, func):
@@ -145,6 +145,7 @@ class GoogleOAuthManager(object):
             self.userRetrievalEnabled = False
             return toReturn
 
+        # Return the auth-enhanced function, which nests the original
         return newFunc
 
     def __enforceRetrievalEnabled(self):
