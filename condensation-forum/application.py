@@ -77,7 +77,7 @@ def indexGetHandler():
     else:
         homeRendered += "<br/><br/>User is: " + user['name']
 
-    return bodyTemplate.render(body = homeRendered, user = user )
+    return bodyTemplate.render(body = homeRendered, title = "Test Home", user = user)
 
 
 @application.route('/', methods=['POST'])
