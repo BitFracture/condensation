@@ -13,52 +13,24 @@ from sqlalchemy import *
 from sqlalchemy.engine import reflection
 from sqlalchemy.schema import Table, DropTable, DropConstraint
 
-
-
-def declareSchema(engine):
-    """Declares the schema."""
-    _Base.metadata.create_all(bind=engine)
-
-    
-def dropSchema(engine):
-    """Drops the schema."""
-
-    # From http://www.sqlalchemy.org/trac/wiki/UsageRecipes/DropEverything
-    inspector = reflection.Inspector.from_engine(engine)
-    metadata = MetaData()
-    
-    tbs = []
-    all_fks = []
-    
-    for table_name in inspector.get_table_names():
-        fks = []
-        for fk in inspector.get_foreign_keys(table_name):
-            if not fk['name']:
-                continue
-            fks.append( ForeignKeyConstraint((),(),name=fk['name']))
-        t = Table(table_name,metadata,*fks)
-        tbs.append(t)
-        all_fks.extend(fks)
-    
-    for fkc in all_fks:
-        engine.execute(DropConstraint(fkc))
-    
-    for table in tbs:
-        engine.execute(DropTable(table))
-
-
-def populate(session):
-    """Populates the database with data."""
+def generate_seeds():
+    """generate some dummy values for initial feature testing and unit tests"""
     values = {}
     values["name1"] = "Bilbo Baggins"
     values["name2"] = "Frodo Baggins"
     values["name3"] = "Gollum"
+    values["pic1"] = "https://vignette.wikia.nocookie.net/lotr/images/e/e9/Crazy_bilbo.jpg/revision/latest/scale-to-width-down/180?cb=20121220104853"
+    values["pic2"] = "https://i0.wp.com/www.tor.com/wp-content/uploads/2015/10/Frodo01.jpg?fit=732%2C+9999&crop=0%2C0%2C100%2C385px&ssl=1"
+    values["pic3"] = "http://www.nydailynews.com/img/2008/07/28/amd_cheney.jpg"
     values["uid1"] = "107225912631866552739"
     values["uid2"] = "107225922631866552739"
     values["uid3"] = "107226212631866552739"
     values["fname1"] = "There and back again"
     values["fname2"] = "The lusty argonian maid"
     values["fname3"] = "Pugilism Illustrated"
+    values["key1"] = "aws1"
+    values["key2"] = "aws2"
+    values["key3"] = "aws3"
     values["url1"] = "www.joes-crematorium.com"
     values["url2"] = "www.parrot-muzzles-r-us.com"
     values["url3"] = "www.tire-photos.com"
@@ -101,12 +73,51 @@ def populate(session):
         
     Pellentesque non rutrum neque, ac posuere sapien. Morbi laoreet turpis urna, et mattis elit scelerisque ornare. Ut euismod odio a faucibus maximus. Ut molestie eleifend nisl vel tristique. Morbi vel ligula sagittis, scelerisque quam id, tincidunt urna. Donec vel efficitur eros. Etiam a turpis auctor, pretium nisl at, lacinia quam. Aenean mollis, tellus id tempus pharetra, ex turpis consequat nibh, sit amet pellentesque tellus elit vitae elit. Praesent a hendrerit sem. Phasellus cursus bibendum placerat. Praesent feugiat porta lorem sed feugiat. Aliquam vulputate pharetra tortor at mattis. Nulla elementum vitae orci in feugiat. Curabitur metus odio, rhoncus sed ligula id, vulputate porta lacus. Quisque tempus finibus vehicula."""
 
-    users = [ User(certificate=values["uid1"], name=values["name1"]), 
-            User(certificate=values["uid2"], name=values["name2"]), 
-            User(certificate=values["uid3"], name=values["name3"])]
-    files = [File(name=values["fname1"], url=["url1"]), 
-            File(name=values["fname2"], url=["url2"]), 
-            File(name=values["fname3"], url=["url3"])]
+    return values
+
+
+
+def declareSchema(engine):
+    """Declares the schema."""
+    _Base.metadata.create_all(bind=engine)
+
+    
+def dropSchema(engine):
+    """Drops the schema."""
+
+    # From http://www.sqlalchemy.org/trac/wiki/UsageRecipes/DropEverything
+    inspector = reflection.Inspector.from_engine(engine)
+    metadata = MetaData()
+    
+    tbs = []
+    all_fks = []
+    
+    for table_name in inspector.get_table_names():
+        fks = []
+        for fk in inspector.get_foreign_keys(table_name):
+            if not fk['name']:
+                continue
+            fks.append( ForeignKeyConstraint((),(),name=fk['name']))
+        t = Table(table_name,metadata,*fks)
+        tbs.append(t)
+        all_fks.extend(fks)
+    
+    for fkc in all_fks:
+        engine.execute(DropConstraint(fkc))
+    
+    for table in tbs:
+        engine.execute(DropTable(table))
+
+
+def populate(session):
+    """Populates the database with data."""
+    values = generate_seeds()
+    users = [ User(id=values["uid1"], name=values["name1"], profile_picture=values["pic1"]), 
+            User(id=values["uid2"], name=values["name2"], profile_picture=values["pic2"]), 
+            User(id=values["uid3"], name=values["name3"], profile_picture=values["pic3"])]
+    files = [File(name=values["fname1"], url=["url1"], cloud_key=values["key1"]), 
+            File(name=values["fname2"], url=["url2"], cloud_key=values["key2"]), 
+            File(name=values["fname3"], url=["url3"], cloud_key=values["key3"])]
     threads = [Thread(heading=values["heading1"], body=values["body1"]),
             Thread(heading=values["heading2"], body=values["body2"]),
             Thread(heading=values["heading3"], body=values["body3"])]

@@ -19,16 +19,16 @@ def getThreadsByCommentTime(dbSession):
         return threads.all()
     return None
 
-def getUser(dbSession, certificate):
+def getUser(dbSession, uid):
     """gets a user by id"""
-    user = dbSession.query(User).filter(User.certificate == certificate)
+    user = dbSession.query(User).filter(User.id == uid)
     if user:
         return user.one_or_none()
     return None
 
-def getUserDeep(dbSession, certificate):
+def getUserDeep(dbSession, uid):
     """gets a user by id"""
-    user = dbSession.query(User).filter(User.certificate == certificate).enable_eagerloads(True)
+    user = dbSession.query(User).filter(User.id == uid).enable_eagerloads(True)
     if user:
         return user.one_or_none()
     return None
@@ -42,25 +42,25 @@ def getFileById(dbSession, fid):
         return f.one_or_none()
     return None
 
-def getFileByName(dbSession, user_certificate, name):
+def getFileByName(dbSession, user_id, name):
     """gets a file by user and id"""
-    f = dbSession.query(File).filter(File.user_certificate == user_certificate).filter(File.name == name)
+    f = dbSession.query(File).filter(File.user_id == user_id).filter(File.name == name)
     if f:
         return f.one_or_none()
     return None
 
-def getFilesByUser(dbSession, user_certificate):
+def getFilesByUser(dbSession, user_id):
     """gets a file by user and id"""
-    f = dbSession.query(File).filter(File.user_certificate == user_certificate)
+    f = dbSession.query(File).filter(File.user_id == user_id)
     if f:
         return f.all()
     return None
 
 
 
-def getThreadsByUser(dbSession, user_certificate):
+def getThreadsByUser(dbSession, user_id):
     """gets all threads associated with a user"""
-    threads = dbSession.query(Thread).filter(Thread.user_certificate == user_certificate)
+    threads = dbSession.query(Thread).filter(Thread.user_id == user_id)
     if threads:
         return threads.all_or_none()
     return None
@@ -80,7 +80,7 @@ def getCommentsByThread(dbSession, tid):
     return None
 
 def getCommentById(dbSession, cid):
-    """gets all threads associated with a user"""
+    """gets a specific comment"""
     comment = dbSession.query(Comment).filter(Comment.id == cid)
     if comment:
         return comment.one_or_none()
