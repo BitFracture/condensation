@@ -110,7 +110,7 @@ class GoogleOAuthManager(object):
         """
         # This function REPLACES the original, and does auth first!
         @wraps(func)
-        def newAuthFunc():
+        def newAuthFunc(*args, **kwargs):
             access_token = session.get('accessToken')
             if access_token is None:
                 session['userRedirect'] = request.url_rule.rule
@@ -118,7 +118,7 @@ class GoogleOAuthManager(object):
             else:
                 self.__populateUserData()
                 self.userRetrievalEnabled = True
-                toReturn = func()
+                toReturn = func(*args, **kwargs)
                 self.__clearUserData()
                 self.userRetrievalEnabled = False
                 return toReturn
@@ -133,14 +133,14 @@ class GoogleOAuthManager(object):
         """
         # This function REPLACES the original, and does auth first!
         @wraps(func)
-        def newFunc():
+        def newFunc(*args, **kwargs):
             access_token = session.get('accessToken')
 
             if access_token is not None:
                 self.__populateUserData()
 
             self.userRetrievalEnabled = True
-            toReturn = func()
+            toReturn = func(*args, **kwargs)
             self.__clearUserData()
             self.userRetrievalEnabled = False
             return toReturn
