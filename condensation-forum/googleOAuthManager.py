@@ -124,9 +124,6 @@ class GoogleOAuthManager(object):
                 self.userRetrievalEnabled = False
                 return toReturn
 
-        # Return the auth-enhanced function, which nests the original
-        newAuthFunc.__name__ = "__authManagerDecorated_" + str(self.autoGenFunctionId)
-        self.autoGenFunctionId += 1
         return newAuthFunc
 
     def enableAuthentication(self, func):
@@ -148,9 +145,6 @@ class GoogleOAuthManager(object):
             self.userRetrievalEnabled = False
             return toReturn
 
-        # Return the auth-enhanced function, which nests the original
-        newFunc.__name__ = "__authManagerDecorated_" + str(self.autoGenFunctionId)
-        self.autoGenFunctionId += 1
         return newFunc
 
     def __enforceRetrievalEnabled(self):
