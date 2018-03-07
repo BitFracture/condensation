@@ -10,6 +10,7 @@ Modules:
         - utilities for managing the database, meant for db administration
     - data.query
         - convenience functions for queries on the database
+
     - data._test_schema
         - unit tests for the schema, used for regression testing during 
           development should not be run on cloud resources, very intense

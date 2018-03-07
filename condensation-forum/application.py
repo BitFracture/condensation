@@ -2,7 +2,7 @@
 An AWS Python3+Flask web app.
 """
 
-from flask import Flask, redirect, url_for, request, session
+from flask import Flask, redirect, url_for, request, session, flash
 from flask_oauthlib.client import OAuth
 import boto3
 import jinja2
@@ -61,21 +61,22 @@ def indexGetHandler():
     """
     Returns the template "home" wrapped by "body" served as HTML
     """
+    threads = None
+    with dataSessionMgr.session_scope() as dbSession:
+        threads = query.getThreadsByCommentTime(dbSession)
+        users = [thread.user for thread in threads]
+        threads = query.extractOutput(threads)
+        users = query.extractOutput(users)
 
-    homeRendered = homeTemplate.render()
+
+    homeRendered = homeTemplate.render(threads_zip_users=zip(threads, users))
+
     user = authManager.getUserData()
     if user == None:
         homeRendered += "<br/><br/>User is not logged in"
     else:
         homeRendered += "<br/><br/>User is: " + user['name']
 
-    with dataSessionMgr.session_scope() as dbSession:
-        threads = query.getThreadsByCommentTime(dbSession)
-        if threads:
-            for thread in threads:
-                homeRendered += "<p><b>%s</b> %s</p>" % (thread.heading, thread.user.name) 
-        else:
-            homeRendered += "<p>No threads found</p>"
     return bodyTemplate.render(body = homeRendered, title = "Test Home", user = user)
 
 

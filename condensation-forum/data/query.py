@@ -1,6 +1,10 @@
 """A collection of queries to enteract with the database"""
 from .schema import User, File, Thread, Comment
 
+def extractOutput(queryResults):
+    """convenience function to extract results from active query object"""
+    return [x.toDict() if x else None for x in queryResults]
+
 def getThreadsByCommentTime(dbSession):
     """get all threads ordered by the time they were last commented"""
     threads = dbSession.query(Thread).order_by(Thread.time_last_reply)
