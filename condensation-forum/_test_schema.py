@@ -4,7 +4,7 @@
 import unittest, traceback
 from data.admin import dropSchema, declareSchema
 from data.session import SessionManager
-from data._query import getUser, getFilesByUser,getFileByName, getFileById, getThreadById, getCommentById
+from data.query import getUser, getFilesByUser,getFileByName, getFileById, getThreadById, getCommentById
 from sqlalchemy.exc import IntegrityError, DataError, InvalidRequestError
 import sqlalchemy
 from data.schema import User, File, Thread, Comment

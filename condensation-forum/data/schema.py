@@ -170,7 +170,7 @@ class File(_Base):
         out["name"] = self.name
         out["url"] = self.url
         out["time_created"] = _localize(self.time_created)
-        out["time_created"] = _localize(self.time_modified)
+        out["time_modified"] = _localize(self.time_modified)
         return out
 
 class Thread(_Base):
@@ -232,7 +232,7 @@ class Thread(_Base):
     @hybrid_property
     def reply_count(self):
         if self.replies:
-            return len(self.replies)
+            return len(self.replies) 
         return 0
 
     attachments = relationship(
@@ -331,8 +331,8 @@ class Comment(_Base):
         out["user_certificate"] = self.user_certificate
         out["thread_id"] = self.thread_id
         out["body"] = self.body
-        out["time_created"] = localize(self.time_created)
-        out["time_modified"] = localize(self.time_modified)
-        out["user_certificate"] = localize(self.user_certificate)
+        out["time_created"] = _localize(self.time_created)
+        out["time_modified"] = _localize(self.time_modified)
+        out["user_certificate"] = self.user_certificate
         return out
 

@@ -110,14 +110,15 @@ def populate(session):
     threads = [Thread(heading=values["heading1"], body=values["body1"]),
             Thread(heading=values["heading2"], body=values["body2"]),
             Thread(heading=values["heading3"], body=values["body3"])]
-    comments = [Comment(user= users[0], body=values["body1"]), 
-            Comment(user= users[1], body=values["body1"]), 
-            Comment(user= users[2], body=values["body1"])]
+    comments = [Comment(user= users[2], body=values["body1"]), 
+            Comment(user= users[1], body=values["body3"]), 
+            Comment(user= users[0], body=values["body2"])]
 
     for user, thread in zip(users, threads):
         user.threads.append(thread)
 
-    for thread, comment in zip(threads, comments):
+    for thread in threads:
+        for comment in comments:
             thread.replies.append(comment)
 
     for user, upload in zip(users, files):
@@ -131,8 +132,6 @@ def populate(session):
 
     for user in users:
         session.add(user)
-
-
 
 
 
