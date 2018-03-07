@@ -75,7 +75,7 @@ def indexGetHandler():
 
     user = authManager.getUserData()
 
-    return bodyTemplate.render(body = homeRendered, user = user )
+    return bodyTemplate.render(body = homeRendered, title = "Test Home", user = user)
 
 
 @application.route('/', methods=['POST'])
