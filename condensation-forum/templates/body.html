@@ -82,8 +82,15 @@
                 </div><!-- /.navbar-collapse -->
             </div><!-- /.container-fluid -->
         </nav>
+        {% with messages = get_flashed_messages() %}
+        {% for message in messages %}
         <div class="container">
-            <!--handle flashing-->
+            <h3>{{message}}</h3>
+        </div>
+        {% endfor %}
+        {% endwith %}
+
+        <div class="container">
             {{ body }}
         </div>
     </body>

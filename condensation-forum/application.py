@@ -2,7 +2,7 @@
 An AWS Python3+Flask web app.
 """
 
-from flask import Flask, redirect, url_for, request, session, flash
+from flask import Flask, redirect, url_for, request, session, flash, get_flashed_messages
 from flask_oauthlib.client import OAuth
 import boto3
 import jinja2
@@ -64,8 +64,12 @@ dataSessionMgr = SessionManager(
 # Load up Jinja2 templates
 templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
 templateEnv = jinja2.Environment(loader=templateLoader)
+
+#pass in library functions to jinja, isn't python terrifying?
 #we want to zip collections in view
 templateEnv.globals.update(zip=zip)
+#we also want to view our flashed messages
+templateEnv.globals.update(get_flashed_messages=get_flashed_messages)
 
 
 bodyTemplate = templateEnv.get_template("body.html")
@@ -94,7 +98,12 @@ def indexGetHandler():
         usernames = [thread.user.name for thread in threads]
         threads = query.extractOutput(threads)
 
-    createThreadUrl = url_for("newThreadHandler")
+    #handle thread creation button
+    user = authManager.getUserData()
+    createThreadUrl="/"
+    if user: 
+        createThreadUrl = url_for("newThreadHandler")
+
     homeRendered = homeTemplate.render(
             threads=threads,
             urls=urls,
@@ -105,7 +114,6 @@ def indexGetHandler():
     removeUrl="/"
     if user:
         removeUrl=url_for("deleteUserHandler", uid=user["id"])
-
 
     return bodyTemplate.render(
             title="Home",
@@ -128,15 +136,20 @@ def newThreadHandler():
         abort(403)
     if form.validate_on_submit():
         tid = None
-        with dataSessionMgr.session_scope() as dbSession:
-            user = query.getUser(dbSession, user["id"])
-            thread = schema.Thread(heading=form.heading.data, body=form.body.data)
-            user.threads.append(thread)
-            #commits current transactions so we can grab the generated id
-            dbSession.flush()
-            tid = thread.id
-        #redirect to the created thread view
-        return redirect(url_for("threadGetHandler", tid=tid))
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                user = query.getUser(dbSession, user["id"])
+                thread = schema.Thread(heading=form.heading.data, body=form.body.data)
+                user.threads.append(thread)
+                #commits current transactions so we can grab the generated id
+                dbSession.flush()
+                tid = thread.id
+            flash("Thread Created")
+            #redirect to the created thread view
+            return redirect(url_for("threadGetHandler", tid=tid))
+        except:
+            flash("Comment Creation Failed")
+            return redirect(url_for("indexGetHandler"))
 
     #error handling is done in the html forms
     user = authManager.getUserData()
@@ -164,13 +177,19 @@ def newCommentHandler(tid):
     if not user:
         abort(403)
     if form.validate_on_submit():
-        with dataSessionMgr.session_scope() as dbSession:
-            user = query.getUser(dbSession, user["id"])
-            thread = query.getThreadById(dbSession, tid)
-            thread.replies.append(schema.Comment(user=user, body=form.body.data))
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                user = query.getUser(dbSession, user["id"])
+                thread = query.getThreadById(dbSession, tid)
+                thread.replies.append(schema.Comment(user=user, body=form.body.data))
 
-        #redirect to the created thread view
-        return redirect(url_for("threadGetHandler", tid=tid))
+            flash("Comment Created")
+            #redirect to the created thread view
+            return redirect(url_for("threadGetHandler", tid=tid))
+        except:
+            flash("Comment Creation Failed")
+            return redirect(url_for("indexGetHandler"))
+
 
     #error handling is done in the html forms
     user = authManager.getUserData()
@@ -241,7 +260,9 @@ def loginCallback():
                         id=user["id"], 
                         name=user["name"], 
                         profile_picture=user["picture"]))
+                    flash("Account Created")
         except:
+            flash("Account Creation Failed")
             #if this fails logout and redirect home
             return redirect(authManager.LOGOUT_ROUTE)
 
@@ -249,17 +270,20 @@ def loginCallback():
 @application.route("/delete-user?id=<int:uid>", methods=["GET"])
 @authManager.requireAuthentication
 def deleteUserHandler(uid):
+    """Deletes a user and redirects them home"""
     user = authManager.getUserData()
     print("delete", uid, user["id"], file = sys.stderr)
     if user and int(user["id"]) == uid:
-        print("here?")
-        with dataSessionMgr.session_scope() as dbSession:
-            #add a new user if not in the database
-            account = query.getUser(dbSession, user["id"])
-            if account:
-                dbSession.delete(account)
-                print("User removed " + user["name"], file=sys.stderr)
-        return redirect(authManager.LOGOUT_ROUTE)
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                account = query.getUser(dbSession, user["id"])
+                if account:
+                    dbSession.delete(account)
+                    flash("Account Deleted")
+        except:
+            flash("Account Deletion Failed")
+
+    return redirect(authManager.LOGOUT_ROUTE)
         
 
 

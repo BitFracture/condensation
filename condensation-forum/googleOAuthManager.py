@@ -4,7 +4,7 @@ unauthenticated users and loading their authentication context if it exists. Add
 `/authorized` exist to assist a standard OAuth flow.
 """
 
-from flask import Flask, redirect, url_for, request, session
+from flask import Flask, redirect, url_for, request, session, get_flashed_messages, flash
 from flask_oauthlib.client import OAuth
 from functools import wraps
 import sys
@@ -68,7 +68,13 @@ class GoogleOAuthManager(object):
                     self.userRetrievalEnabled = False
 
             redirectUrl = request.args.get('redirect', default = "/")
+            #since we are clearing the session, we need to preserve user messages manually
+            messages = get_flashed_messages()
             session.clear()
+
+            #restore message status(used in account deletion)
+            for message in messages:
+                flash(message)
             return redirect(redirectUrl)
 
         @flaskApp.route(self.LOGIN_ROUTE, methods=['GET'])
