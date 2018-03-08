@@ -2,7 +2,7 @@
 An AWS Python3+Flask web app.
 """
 
-from flask import Flask, redirect, url_for, request, session, flash,render_template
+from flask import Flask, redirect, url_for, request, session, flash, get_flashed_messages, render_template
 from flask_oauthlib.client import OAuth
 import boto3,botocore
 import jinja2
@@ -74,8 +74,12 @@ dataSessionMgr = SessionManager(
 # Load up Jinja2 templates
 templateLoader = jinja2.FileSystemLoader(searchpath="./templates/")
 templateEnv = jinja2.Environment(loader=templateLoader)
+
+#pass in library functions to jinja, isn't python terrifying?
 #we want to zip collections in view
 templateEnv.globals.update(zip=zip)
+#we also want to view our flashed messages
+templateEnv.globals.update(get_flashed_messages=get_flashed_messages)
 
 
 bodyTemplate = templateEnv.get_template("body.html")
@@ -100,12 +104,21 @@ def indexGetHandler():
     threads = None
     #grab threads ordered by time, and zip them with some usernames
     with dataSessionMgr.session_scope() as dbSession:
+
+        user = authManager.getUserData()
+        if not user:
+            flash("Welcome, please login or create an account.")
+
+
         threads = query.getThreadsByCommentTime(dbSession)
         urls = [url_for("threadGetHandler", tid=thread.id) for thread in threads]
         usernames = [thread.user.name for thread in threads]
         threads = query.extractOutput(threads)
 
+    #handle thread creation button
     createThreadUrl = url_for("newThreadHandler")
+
+
     homeRendered = homeTemplate.render(
             threads=threads,
             urls=urls,
@@ -113,18 +126,22 @@ def indexGetHandler():
             createUrl=createThreadUrl)
 
     user = authManager.getUserData()
+    removeUrl="/"
+    if user:
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])
 
     return bodyTemplate.render(
             title="Home",
             body=homeRendered,
             user=user,
+            removeUrl=removeUrl,
             location=request.url)
 
 
 @application.route("/new-thread", methods=["GET", "POST"])
 @authManager.requireAuthentication
 def newThreadHandler():
-    """Renders the thread creation screen, creates thread if all data is validated"""
+    """ Renders the thread creation screen, creates thread if all data is validated """
 
     #do not allow unauthenticated users to submit
     form = CreateThreadForm()
@@ -134,26 +151,32 @@ def newThreadHandler():
         abort(403)
     if form.validate_on_submit():
         tid = None
-        with dataSessionMgr.session_scope() as dbSession:
-
-            #TODO hook up actual user id, once account creation works
-            #this is the id of "Bilbo Baggins"
-            user = query.getUser(dbSession, "107225912631866552739")
-            thread = schema.Thread(heading=form.heading.data, body=form.body.data)
-            user.threads.append(thread)
-            #commits current transactions so we can grab the generated id
-            dbSession.flush()
-            tid = thread.id
-        #redirect to the created thread view
-        return redirect(url_for("threadGetHandler", tid=tid))
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                user = query.getUser(dbSession, user["id"])
+                thread = schema.Thread(heading=form.heading.data, body=form.body.data)
+                user.threads.append(thread)
+                #commits current transactions so we can grab the generated id
+                dbSession.flush()
+                tid = thread.id
+            flash("Thread Created")
+            #redirect to the created thread view
+            return redirect(url_for("threadGetHandler", tid=tid))
+        except:
+            flash("Comment Creation Failed")
+            return redirect(url_for("indexGetHandler"))
 
     #error handling is done in the html forms
     user = authManager.getUserData()
+    removeUrl="/"
+    if user:
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])
     rendered = createThreadTemplate.render(form=form)
     return bodyTemplate.render(
             title="Create Thread",
             body=rendered,
             user=user,
+            removeUrl=removeUrl,
             location=url_for('indexGetHandler', _external=True))
 
 
@@ -169,23 +192,31 @@ def newCommentHandler(tid):
     if not user:
         abort(403)
     if form.validate_on_submit():
-        with dataSessionMgr.session_scope() as dbSession:
-            #TODO hook up actual user id, once account creation works
-            #this is the id of "Bilbo Baggins"
-            user = query.getUser(dbSession, "107225912631866552739")
-            thread = query.getThreadById(dbSession, tid)
-            thread.replies.append(schema.Comment(user=user, body=form.body.data))
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                user = query.getUser(dbSession, user["id"])
+                thread = query.getThreadById(dbSession, tid)
+                thread.replies.append(schema.Comment(user=user, body=form.body.data))
 
-        #redirect to the created thread view
-        return redirect(url_for("threadGetHandler", tid=tid))
+            flash("Comment Created")
+            #redirect to the created thread view
+            return redirect(url_for("threadGetHandler", tid=tid))
+        except:
+            flash("Comment Creation Failed")
+            return redirect(url_for("indexGetHandler"))
+
 
     #error handling is done in the html forms
     user = authManager.getUserData()
+    removeUrl="/"
+    if user:
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])
     rendered = createCommentTemplate.render(form=form)
     return bodyTemplate.render(
             title="Reply",
             body=rendered,
             user=user,
+            removeUrl=removeUrl,
             location=url_for('indexGetHandler', _external=True))
 
 
@@ -209,6 +240,9 @@ def threadGetHandler(tid):
         thread = query.extractOutput(thread)
 
     user = authManager.getUserData();
+    removeUrl="/"
+    if user:
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])    
     threadRendered = threadTemplate.render(
             thread=thread,
             thread_attachments=thread_attachments,
@@ -220,6 +254,7 @@ def threadGetHandler(tid):
     return bodyTemplate.render(
             title="Thread",
             body=threadRendered,
+            removeUrl=removeUrl,
             user=user,
             location=request.url)
 
@@ -230,7 +265,42 @@ def loginCallback():
     This is invoked when a user logs in, before any other logic.
     """
     user = authManager.getUserData()
-    print("User signed in: " + user["name"], file=sys.stderr)
+    if user:
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                #add a new user if not in the database
+                if not query.getUser(dbSession, user["id"]):
+                    print("User created: " + user["name"], file=sys.stderr)
+                    dbSession.add(schema.User(
+                        id=user["id"], 
+                        name=user["name"], 
+                        profile_picture=user["picture"]))
+                    flash("Account Created")
+        except:
+            flash("Account Creation Failed")
+            #if this fails logout and redirect home
+            return redirect(authManager.LOGOUT_ROUTE)
+
+
+@application.route("/delete-user?id=<int:uid>", methods=["GET"])
+@authManager.requireAuthentication
+def deleteUserHandler(uid):
+    """Deletes a user and redirects them home"""
+    user = authManager.getUserData()
+    print("delete", uid, user["id"], file = sys.stderr)
+    if user and int(user["id"]) == uid:
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                account = query.getUser(dbSession, user["id"])
+                if account:
+                    dbSession.delete(account)
+                    flash("Account Deleted")
+        except:
+            flash("Account Deletion Failed")
+
+    return redirect(authManager.LOGOUT_ROUTE)
+        
+
 
 
 @authManager.logoutCallback
