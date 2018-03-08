@@ -20,6 +20,7 @@ from data import query, schema
 from forms import CreateThreadForm, CreateCommentForm
 import inspect
 from werkzeug.utils import secure_filename
+import hashlib
 
 ###############################################################################
 #FLASK CONFIG
@@ -62,6 +63,7 @@ s3client = boto3.client(
    aws_access_key_id=config.get("accessKey"),
    aws_secret_access_key=config.get("secretKey")
 )
+
 
 #database connection
 dataSessionMgr = SessionManager(
@@ -243,21 +245,35 @@ def logoutCallback():
 
 
 @application.route('/fileManager', methods=['GET', 'POST'])
+@authManager.requireAuthentication
 def fileManager():
+    user = authManager.getUserData()
     if request.method == 'POST':
         # do stuff when the form is submitted
+        if not user:
+            abort(403)
+        id = user['id']
+
         if 'file' not in request.files:
             flash('No file part')
             return redirect(request.url)
         file = request.files['file']
+        print(file.filename,file=sys.stderr)
         # if user does not select file, browser also
         # submit a empty part without filename
         if file.filename == '':
             flash('No selected file')
+            print(file.filename,file=sys.stderr)
             return redirect(request.url)
-        if file!= '':
+        if file:
             filename = secure_filename(file.filename)
-            s3client.upload_fileobj(file,bucket_name,file.filename,ExtraArgs={"ACL": "public-read","ContentType": file.content_type})
+            key = id+"/"+filename
+            print("id",id,"fname", file.filename,"buck", bucket_name, "key",key,file=sys.stderr)
+            s3client.upload_fileobj(file,bucket_name,key,ExtraArgs={"ACL": "public-read","ContentType": file.content_type})
+            flash('Upload Successfully')
+            url = "https://s3-us-west-2.amazonaws.com/condensation-forum/"+key
+            print("URL = ",url,file=sys.stderr)
+            storeToDB(id,url,key,filename)
             return redirect("/fileManager")
 
         else:
@@ -266,10 +282,49 @@ def fileManager():
         # redirect to end the POST handling
         # the redirect can be to the same route or somewhere else
         return redirect(url_for('home'))
+    """
+    if request.method == 'GET':
+        redirect("/fileManager")
+        if not user:
+            abort(403)
+        id = user['id']
+        #Get the user's profile from the DB and zip it first
+        with dataSessionMgr.session_scope() as dbSession:
+            files = query.getFilesByUser(dbSession,id)
+            files = query.extractOutput(files)
 
-    # show the form, it wasn't submitted
-    return render_template('fileManager.html')
+        if files != None:
+            fileManagerRendered = fileManagerTemplate.render(files=files)
+            return bodyTemplate.render(
+                title="File Manager",
+                body = fileManagerRendered,
+                user=user,
+                # Todo: Incorporate removeURL here
+                location=request.url)
+                """
+    fileManagerRendered = fileManagerTemplate.render()
+    return bodyTemplate.render(
+                title="File Manager",
+                body = fileManagerRendered,
+                user=user,
+                # Todo: Incorporate removeURL here
+                location=request.url)
 
+def storeToDB(userID,url,key,filename):
+    """This method is used to store the data uploaded into DB"""
+    with dataSessionMgr.session_scope() as dbSession:
+             print("Top of store Method",file=sys.stderr)
+             user =query.getUser(dbSession,"107225912631866552739")
+             file = schema.File(url=url,cloud_key=key,name=filename)
+             user.uploads.append(file)
+             print("Bottom of store Method",file=sys.stderr)
+  
+
+def generateKey(userID,fileName):
+    """This method is used to generate the key to upload into S3 using Hash Function"""
+    string = userID + fileName
+    hash_object = hashlib.md5(string.encode())
+    return hash_object.hexdigest()
 # Run Flask app now
 if __name__ == "__main__":
     # Enable debug output, disable in prod

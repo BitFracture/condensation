@@ -68,6 +68,7 @@
                             <ul class="dropdown-menu">
                                 <li class="dropdown-header">{{ user.email }}</li>
                                 <li role="separator" class="divider"></li>
+								<li><a href="/fileManager">File Manager</li>
                                 <li><a href="/logout{% if location %}?redirect={{ location }}{% endif %}">Sign Out</a></li>
                                 <li><a href="/logout?redirect=https://www.google.com/accounts/Logout{% if location %}?continue=https://appengine.google.com/_ah/logout?continue={{ location }}{% endif %}">Sign Out of Google</a></li>
                             </ul>
@@ -84,7 +85,6 @@
         <div class="container">
             <!--handle flashing-->
             {{ body }}
-			<p><a href="/fileManager">File Manager</p>
         </div>
     </body>
 </html>
