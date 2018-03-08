@@ -70,19 +70,27 @@
                                 <li role="separator" class="divider"></li>
                                 <li><a href="/logout{% if location %}?redirect={{ location }}{% endif %}">Sign Out</a></li>
                                 <li><a href="/logout?redirect=https://www.google.com/accounts/Logout{% if location %}?continue=https://appengine.google.com/_ah/logout?continue={{ location }}{% endif %}">Sign Out of Google</a></li>
+                                <li><a href="{{removeUrl}}">Delete Account</a></li>
                             </ul>
                         </li>
                         {% else %}
                         <!-- User is not logged in -->
-                        <li><a href="/login{% if location %}?redirect={{ location }}{% endif %}">Log In</a></li>
+                        <li><a href="/login{% if location %}?redirect={{ location }}{% endif %}">Login/Create</a></li>
                         {% endif %}
 
                     </ul>
                 </div><!-- /.navbar-collapse -->
             </div><!-- /.container-fluid -->
         </nav>
+        {% with messages = get_flashed_messages() %}
+        {% for message in messages %}
         <div class="container">
-            <!--handle flashing-->
+            <b>{{message}}</b>
+        </div>
+        {% endfor %}
+        {% endwith %}
+
+        <div class="container">
             {{ body }}
         </div>
     </body>
