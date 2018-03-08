@@ -102,11 +102,16 @@ def indexGetHandler():
             createUrl=createThreadUrl)
 
     user = authManager.getUserData()
+    removeUrl="/"
+    if user:
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])
+
 
     return bodyTemplate.render(
             title="Home",
             body=homeRendered,
             user=user,
+            removeUrl=removeUrl,
             location=request.url)
 
 
@@ -124,10 +129,7 @@ def newThreadHandler():
     if form.validate_on_submit():
         tid = None
         with dataSessionMgr.session_scope() as dbSession:
-
-            #TODO hook up actual user id, once account creation works
-            #this is the id of "Bilbo Baggins"
-            user = query.getUser(dbSession, "107225912631866552739")
+            user = query.getUser(dbSession, user["id"])
             thread = schema.Thread(heading=form.heading.data, body=form.body.data)
             user.threads.append(thread)
             #commits current transactions so we can grab the generated id
@@ -138,11 +140,15 @@ def newThreadHandler():
 
     #error handling is done in the html forms
     user = authManager.getUserData()
+    removeUrl="/"
+    if user:
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])
     rendered = createThreadTemplate.render(form=form)
     return bodyTemplate.render(
             title="Create Thread",
             body=rendered,
             user=user,
+            removeUrl=removeUrl,
             location=url_for('indexGetHandler', _external=True))
 
 
@@ -159,9 +165,7 @@ def newCommentHandler(tid):
         abort(403)
     if form.validate_on_submit():
         with dataSessionMgr.session_scope() as dbSession:
-            #TODO hook up actual user id, once account creation works
-            #this is the id of "Bilbo Baggins"
-            user = query.getUser(dbSession, "107225912631866552739")
+            user = query.getUser(dbSession, user["id"])
             thread = query.getThreadById(dbSession, tid)
             thread.replies.append(schema.Comment(user=user, body=form.body.data))
 
@@ -170,11 +174,15 @@ def newCommentHandler(tid):
 
     #error handling is done in the html forms
     user = authManager.getUserData()
+    removeUrl="/"
+    if user:
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])
     rendered = createCommentTemplate.render(form=form)
     return bodyTemplate.render(
             title="Reply",
             body=rendered,
             user=user,
+            removeUrl=removeUrl,
             location=url_for('indexGetHandler', _external=True))
 
 
@@ -198,6 +206,9 @@ def threadGetHandler(tid):
         thread = query.extractOutput(thread)
 
     user = authManager.getUserData();
+    removeUrl="/"
+    if user:
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])    
     threadRendered = threadTemplate.render(
             thread=thread,
             thread_attachments=thread_attachments,
@@ -209,6 +220,7 @@ def threadGetHandler(tid):
     return bodyTemplate.render(
             title="Thread",
             body=threadRendered,
+            removeUrl=removeUrl,
             user=user,
             location=request.url)
 
@@ -219,7 +231,37 @@ def loginCallback():
     This is invoked when a user logs in, before any other logic.
     """
     user = authManager.getUserData()
-    print("User signed in: " + user["name"], file=sys.stderr)
+    if user:
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                #add a new user if not in the database
+                if not query.getUser(dbSession, user["id"]):
+                    print("User created: " + user["name"], file=sys.stderr)
+                    dbSession.add(schema.User(
+                        id=user["id"], 
+                        name=user["name"], 
+                        profile_picture=user["picture"]))
+        except:
+            #if this fails logout and redirect home
+            return redirect(authManager.LOGOUT_ROUTE)
+
+
+@application.route("/delete-user?id=<int:uid>", methods=["GET"])
+@authManager.requireAuthentication
+def deleteUserHandler(uid):
+    user = authManager.getUserData()
+    print("delete", uid, user["id"], file = sys.stderr)
+    if user and int(user["id"]) == uid:
+        print("here?")
+        with dataSessionMgr.session_scope() as dbSession:
+            #add a new user if not in the database
+            account = query.getUser(dbSession, user["id"])
+            if account:
+                dbSession.delete(account)
+                print("User removed " + user["name"], file=sys.stderr)
+        return redirect(authManager.LOGOUT_ROUTE)
+        
+
 
 
 @authManager.logoutCallback
