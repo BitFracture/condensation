@@ -93,16 +93,20 @@ def indexGetHandler():
     threads = None
     #grab threads ordered by time, and zip them with some usernames
     with dataSessionMgr.session_scope() as dbSession:
+
+        user = authManager.getUserData()
+        if not user:
+            flash("Welcome, please login/create account.")
+
+
         threads = query.getThreadsByCommentTime(dbSession)
         urls = [url_for("threadGetHandler", tid=thread.id) for thread in threads]
         usernames = [thread.user.name for thread in threads]
         threads = query.extractOutput(threads)
 
     #handle thread creation button
-    user = authManager.getUserData()
-    createThreadUrl="/"
-    if user: 
-        createThreadUrl = url_for("newThreadHandler")
+    createThreadUrl = url_for("newThreadHandler")
+
 
     homeRendered = homeTemplate.render(
             threads=threads,
@@ -126,7 +130,7 @@ def indexGetHandler():
 @application.route("/new-thread", methods=["GET", "POST"])
 @authManager.requireAuthentication
 def newThreadHandler():
-    """Renders the thread creation screen, creates thread if all data is validated"""
+    """ Renders the thread creation screen, creates thread if all data is validated """
 
     #do not allow unauthenticated users to submit
     form = CreateThreadForm()

@@ -75,7 +75,7 @@
                         </li>
                         {% else %}
                         <!-- User is not logged in -->
-                        <li><a href="/login{% if location %}?redirect={{ location }}{% endif %}">Log In</a></li>
+                        <li><a href="/login{% if location %}?redirect={{ location }}{% endif %}">Log In/Create Account</a></li>
                         {% endif %}
 
                     </ul>
@@ -85,7 +85,7 @@
         {% with messages = get_flashed_messages() %}
         {% for message in messages %}
         <div class="container">
-            <h3>{{message}}</h3>
+            <b>{{message}}</b>
         </div>
         {% endfor %}
         {% endwith %}

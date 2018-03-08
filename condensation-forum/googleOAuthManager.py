@@ -176,9 +176,12 @@ class GoogleOAuthManager(object):
         @wraps(func)
         def newAuthFunc(*args, **kwargs):
             access_token = session.get('accessToken')
+            account = None
+                
             if access_token is None:
                 session['userRedirect'] = request.url_rule.rule
-                return redirect(self.LOGIN_ROUTE)
+                flash("Please login to do that.")
+                return redirect("/")
             else:
                 self.__populateUserData()
                 self.userRetrievalEnabled = True
