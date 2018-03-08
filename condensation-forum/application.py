@@ -96,7 +96,7 @@ def indexGetHandler():
 
         user = authManager.getUserData()
         if not user:
-            flash("Welcome, please login/create account.")
+            flash("Welcome, please login or create an account.")
 
 
         threads = query.getThreadsByCommentTime(dbSession)
