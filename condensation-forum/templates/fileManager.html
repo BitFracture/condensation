@@ -8,8 +8,9 @@
                     <div class="row">
                         <div class="col-md-3"><b>File Name</b></div>
                         <div class="col-md-3"><b>URL</b></div>
-                        <div class="col-md-3"><b>Time Created</b></div>
-                        <div class="col-md-3"><b>Time Modified</b></div>
+                        <div class="col-md-2"><b>Time Created</b></div>
+                        <div class="col-md-2"><b>Time Modified</b></div>
+						<div class="col-md-2"><b>Remove</b></div>
                     </div>
                 </div>
                 <!--User information retrieval-->
@@ -24,13 +25,18 @@
                             <div class="col-md-3">
                                 {{ file["url"] }}
                             </div>
-                            <div class="col-md-3">
-                                {{ file["time_created"].strftime("%H:%M %D/%M/%Y")}}
+                            <div class="col-md-2">
+                                {{ file["time_created"].strftime("%H:%M %D")}}
                             </div>
-                            <div class="col-md-3">
-                                {{ file["time_modified"].strftime("%H:%M %D/%M/%Y") }}
+                            <div class="col-md-2">
+                                {{ file["time_modified"].strftime("%H:%M %D") }}
                             </div>
-
+							<div class="col-md-2">
+								<form action="/file-delete" method="POST" >
+									<input name="file" id="file" type="text" style="display: none;" value="{{ file['id'] }}"></input>
+									<button type="submit" class="btn btn-primary">Delete</button>
+								</form>
+                            </div>
                         </div>
                     </a>
                 </div>
@@ -47,20 +53,21 @@
             </div>
         </div>
     </div>
-</div
-<form method="POST" action="\fileManager" enctype=multipart/form-data>
+</div>
+<form id="llama" method="POST" action="/fileManager" enctype="multipart/form-data">
 	<div class="row">
 		<div class="col-md-4">
 			<label for="file">Choose file to upload</label>
 		</div>
 		<div class="col-md-4">
-		<input type = "file" id="file" name ="file" multiple>
+		<input type="file" id="file" name="file" multiple></input>
 		</div>
 		<div class="col-md-4">
-		<input type=submit value=Upload>
+		<!--<input type="submit" value="Upload" class="btn btn-primary"></input>-->
+		<button type="submit" class="btn btn-primary">Upload</button>
 		</div>
 	</div>
 </form>
-<form method="GET" action="/">
+<form id="taco" method="GET" action="/">
     <button type="submit" class="btn btn-primary">Back</button>
 </form>

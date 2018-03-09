@@ -21,6 +21,8 @@ from forms import CreateThreadForm, CreateCommentForm
 import inspect
 from werkzeug.utils import secure_filename
 import hashlib
+import uuid
+import os
 
 ###############################################################################
 #FLASK CONFIG
@@ -312,7 +314,21 @@ def logoutCallback():
     print("User signed out: " + user["name"], file=sys.stderr)
 
 
-
+@application.route('/file-delete', methods=['POST'])
+@authManager.requireAuthentication
+def fileManagerDeleteHander():
+    user = authManager.getUserData()
+    print("Top of delete method", sys.stderr)
+    fid = request.form['file']
+    
+    if not user:
+        abort(403)
+    id = user['id']
+    #delete the file by fileID
+    print("File ID = " + fid, sys.stderr)
+    print("Bottom of delete method", sys.stderr)
+    
+    return redirect(url_for("fileManager"))
 
 @application.route('/fileManager', methods=['GET', 'POST'])
 @authManager.requireAuthentication
@@ -331,30 +347,42 @@ def fileManager():
         print(file.filename,file=sys.stderr)
         # if user does not select file, browser also
         # submit a empty part without filename
-        if file.filename == '':
+        if file.filename.strip() == '':
             flash('No selected file')
-            print(file.filename,file=sys.stderr)
+            print(file.filename.strip(),file=sys.stderr)
             return redirect(request.url)
         if file:
-            filename = secure_filename(file.filename)
-            key = id+"/"+filename
-            print("id",id,"fname", file.filename,"buck", bucket_name, "key",key,file=sys.stderr)
-            s3client.upload_fileobj(file,bucket_name,key,ExtraArgs={"ACL": "public-read","ContentType": file.content_type})
-            flash('Upload Successfully')
-            url = "https://s3-us-west-2.amazonaws.com/condensation-forum/"+key
-            print("URL = ",url,file=sys.stderr)
-            storeToDB(id,url,key,filename)
-            return redirect("/fileManager")
+            # Determine shortened file name (secure)
+            filename = secure_filename(file.filename.strip())
+            while (len(filename) > 50):
+                cutString = len(filename)%50
+                filename = filename[cutString:len(filename)]
+
+            # Determine the S3 key
+            try:
+                myUuid = uuid.uuid4().hex
+                print("Random UUID is " + myUuid, file=sys.stderr)
+                fn, fileExtension = os.path.splitext(filename)
+                key = id + "/" + myUuid + fileExtension
+                
+                print("id", id, "fname", file.filename, "buck", bucket_name, "key", key, file=sys.stderr)
+                s3client.upload_fileobj(file, bucket_name, key, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
+                url = "https://s3-us-west-2.amazonaws.com/condensation-forum/" + key
+                print("URL = ", url, file=sys.stderr)
+                storeToDB(id, url, key, filename)
+                flash('Upload Successfully')
+                return redirect("/fileManager")
+            except:
+                flash("Something went wrong, failed to upload")
 
         else:
             return redirect("/fileManager")
         
         # redirect to end the POST handling
         # the redirect can be to the same route or somewhere else
-        return redirect(url_for('home'))
-    """
+        return redirect("/fileManager")
+    
     if request.method == 'GET':
-        redirect("/fileManager")
         if not user:
             abort(403)
         id = user['id']
@@ -371,7 +399,7 @@ def fileManager():
                 user=user,
                 # Todo: Incorporate removeURL here
                 location=request.url)
-                """
+        
     fileManagerRendered = fileManagerTemplate.render()
     return bodyTemplate.render(
                 title="File Manager",
@@ -384,7 +412,7 @@ def storeToDB(userID,url,key,filename):
     """This method is used to store the data uploaded into DB"""
     with dataSessionMgr.session_scope() as dbSession:
              print("Top of store Method",file=sys.stderr)
-             user =query.getUser(dbSession,"107225912631866552739")
+             user =query.getUser(dbSession,userID)
              file = schema.File(url=url,cloud_key=key,name=filename)
              user.uploads.append(file)
              print("Bottom of store Method",file=sys.stderr)
