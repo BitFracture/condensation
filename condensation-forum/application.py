@@ -318,16 +318,31 @@ def logoutCallback():
 @authManager.requireAuthentication
 def fileManagerDeleteHander():
     user = authManager.getUserData()
-    print("Top of delete method", sys.stderr)
-    fid = request.form['file']
+    fid = int(request.form['file'])
     
     if not user:
         abort(403)
     id = user['id']
-    #delete the file by fileID
-    print("File ID = " + fid, sys.stderr)
-    print("Bottom of delete method", sys.stderr)
+
+    #delete the file by Cloud_key in AWS S3
+    with dataSessionMgr.session_scope() as dbSession:
+        file1 = query.getFileById(dbSession,fid)
+        file1 = query.extractOutput(file1)
     
+    key = file1['cloud_key']
+    try:
+        s3client.delete_object(Bucket=bucket_name,Key=key)
+    except Exception as e:
+        print("Something happen: ",e)
+        return e
+    
+    #delete the file by fileID in DB
+    with dataSessionMgr.session_scope() as dbSession:
+        file = query.getFileById(dbSession,fid)
+        if file:
+            dbSession.delete(file)
+            flash("File Deleted")
+  
     return redirect(url_for("fileManager"))
 
 @application.route('/fileManager', methods=['GET', 'POST'])
@@ -344,12 +359,10 @@ def fileManager():
             flash('No file part')
             return redirect(request.url)
         file = request.files['file']
-        print(file.filename,file=sys.stderr)
         # if user does not select file, browser also
         # submit a empty part without filename
         if file.filename.strip() == '':
             flash('No selected file')
-            print(file.filename.strip(),file=sys.stderr)
             return redirect(request.url)
         if file:
             # Determine shortened file name (secure)
@@ -361,19 +374,16 @@ def fileManager():
             # Determine the S3 key
             try:
                 myUuid = uuid.uuid4().hex
-                print("Random UUID is " + myUuid, file=sys.stderr)
                 fn, fileExtension = os.path.splitext(filename)
                 key = id + "/" + myUuid + fileExtension
-                
-                print("id", id, "fname", file.filename, "buck", bucket_name, "key", key, file=sys.stderr)
                 s3client.upload_fileobj(file, bucket_name, key, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
                 url = "https://s3-us-west-2.amazonaws.com/condensation-forum/" + key
-                print("URL = ", url, file=sys.stderr)
                 storeToDB(id, url, key, filename)
                 flash('Upload Successfully')
                 return redirect("/fileManager")
-            except:
-                flash("Something went wrong, failed to upload")
+            except Exception as e:
+                print("Something happen: ",e)
+                return e
 
         else:
             return redirect("/fileManager")
@@ -411,18 +421,10 @@ def fileManager():
 def storeToDB(userID,url,key,filename):
     """This method is used to store the data uploaded into DB"""
     with dataSessionMgr.session_scope() as dbSession:
-             print("Top of store Method",file=sys.stderr)
-             user =query.getUser(dbSession,userID)
-             file = schema.File(url=url,cloud_key=key,name=filename)
+             user = query.getUser(dbSession, userID)
+             file = schema.File(url=url, cloud_key=key, name=filename)
              user.uploads.append(file)
-             print("Bottom of store Method",file=sys.stderr)
-  
 
-def generateKey(userID,fileName):
-    """This method is used to generate the key to upload into S3 using Hash Function"""
-    string = userID + fileName
-    hash_object = hashlib.md5(string.encode())
-    return hash_object.hexdigest()
 # Run Flask app now
 if __name__ == "__main__":
     # Enable debug output, disable in prod
