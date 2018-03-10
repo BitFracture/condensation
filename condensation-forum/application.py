@@ -90,8 +90,6 @@ homeTemplate = templateEnv.get_template("home.html")
 threadTemplate = templateEnv.get_template("thread.html")
 editThreadTemplate = templateEnv.get_template("edit-thread.html")
 editCommentTemplate = templateEnv.get_template("edit-comment.html")
-createThreadTemplate = templateEnv.get_template("new-thread.html")
-createCommentTemplate = templateEnv.get_template("new-comment.html")
 fileManagerTemplate = templateEnv.get_template("file-manager.html")
 fileListTemplate = templateEnv.get_template("file-list.html")
 
