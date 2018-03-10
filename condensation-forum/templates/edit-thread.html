@@ -33,6 +33,27 @@
     }
 
     /**
+    * Add a number to the JSON array string. Uniqueness isenforced.
+    */
+    function unselectAttachment(number) {
+
+        document.getElementById("attach-frame").style.display = "none";
+
+        var formElement = document.getElementById('fileIds');
+        var currentList = JSON.parse(formElement.value);
+        for (var i = 0; i < currentList.length; i++) {
+
+            if (number == currentList[i]["id"]) {
+                currentList.splice(i, 1);
+                break;
+            }
+        }
+        formElement.value = JSON.stringify(currentList);
+
+        loadAttachmentList();
+    }
+
+    /**
     * Renders the markup for the visible attachment list. Note that the actual attachment form input is actually stored
     * with selectAttachment.
     */
@@ -42,7 +63,8 @@
         var currentList = JSON.parse(formElement.value);
         var rendered = "";
         for (var i = 0; i < currentList.length; i++) {
-            rendered += '<button type="button" class="list-group-item list-group-item-action">';
+            rendered += '<button type="button" class="list-group-item list-group-item-action" ';
+            rendered += 'onclick="unselectAttachment(' + currentList[i]["id"] + ')" >';
             rendered += currentList[i]["name"] + '</button>';
         }
         rendered += '<button type="button" class="list-group-item list-group-item-action active" style="width: auto;" '
@@ -90,7 +112,7 @@
                                     {% endfor %}
                                 </div>
                                 <div class="form-group">
-                                    <input type="text" value="[]" id="fileIds" name="fileIds" style="display: none;" >
+                                    <input type="text" value="{{ fileListAsString }}" id="fileIds" name="fileIds" style="display: none;" >
                                     <label>Attached Files (click to remove)</label><br/>
                                     <div id="fileList" class="list-group" style="width: 50%; min-width: 300px;">
                                         <i>Loading...</i>

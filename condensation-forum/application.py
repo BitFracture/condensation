@@ -146,8 +146,6 @@ def newThreadHandler():
     form = CreateThreadForm()
 
     user = authManager.getUserData()
-    if not user:
-        abort(403)
     if form.validate_on_submit():
         tid = None
         try:
@@ -170,7 +168,11 @@ def newThreadHandler():
     removeUrl="/"
     if user:
         removeUrl=url_for("deleteUserHandler", uid=user["id"])
-    rendered = editThreadTemplate.render(form=form)
+
+    #File attachment list
+    fileList = [];
+
+    rendered = editThreadTemplate.render(form=form, fileListAsString=json.dumps(fileList))
 
     return bodyTemplate.render(
             title="Create Thread",
