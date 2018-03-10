@@ -1,5 +1,4 @@
 
-<h4>File Manager</h4>
 <div class="row">
     <div class="col-md-12">
         <div class="panel panel-default">
@@ -9,11 +8,10 @@
                         <div class="col-md-3"><b>File Name</b></div>
                         <div class="col-md-3"><b>URL</b></div>
                         <div class="col-md-2"><b>Time Created</b></div>
-                        <div class="col-md-2"><b>Time Modified</b></div>
 						<div class="col-md-2"><b>Remove</b></div>
                     </div>
                 </div>
-                <!--User information retrieval-->
+                <!--File information retrieval-->
                 {% for file in files%}
 
                 <div class="userProfile">
@@ -27,9 +25,6 @@
                             </div>
                             <div class="col-md-2">
                                 {{ file["time_created"].strftime("%H:%M %D")}}
-                            </div>
-                            <div class="col-md-2">
-                                {{ file["time_modified"].strftime("%H:%M %D") }}
                             </div>
 							<div class="col-md-2">
 								<form action="/file-delete" method="POST" >
@@ -45,7 +40,7 @@
                 <div class="row">
                     <div class="col-md-12">
 
-                        <em>No entries here so far</em>
+                        <em>You don't have any files</em>
                     </div>
                 </div>
                 {% endfor %}
@@ -54,7 +49,7 @@
         </div>
     </div>
 </div>
-<form id="llama" method="POST" action="/fileManager" enctype="multipart/form-data">
+<form id="llama" method="POST" action="/file-manager" enctype="multipart/form-data">
 	<div class="row">
 		<div class="col-md-4">
 			<label for="file">Choose file to upload</label>

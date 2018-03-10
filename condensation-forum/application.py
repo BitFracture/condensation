@@ -88,7 +88,8 @@ homeTemplate = templateEnv.get_template("home.html")
 threadTemplate = templateEnv.get_template("thread.html")
 createThreadTemplate = templateEnv.get_template("new-thread.html")
 createCommentTemplate = templateEnv.get_template("new-comment.html")
-fileManagerTemplate = templateEnv.get_template("fileManager.html")
+fileManagerTemplate = templateEnv.get_template("file-manager.html")
+fileListTemplate = templateEnv.get_template("file-list.html")
 
 
 ###############################################################################
@@ -305,15 +306,32 @@ def deleteUserHandler(uid):
 @authManager.logoutCallback
 def logoutCallback():
     """
-    This is invoked when a user logs in, before any other logic.
+    This is invoked when a user logs out, immediately before user context is destroyed.
     """
     user = authManager.getUserData()
     print("User signed out: " + user["name"], file=sys.stderr)
 
 
+@application.route('/file-manager', methods=['GET'])
+@authManager.enableAuthentication
+def fileManagerGetHandler():
+
+    user = authManager.getUserData();
+    if not user:
+        return 401;
+    id = user['id']
+
+    fileManagerRendered = fileManagerTemplate.render()
+    return bodyTemplate.render(
+        title="File Manager",
+        body=fileManagerRendered,
+        user=user,
+        location=request.url)
+
+
 @application.route('/file-delete', methods=['POST'])
 @authManager.requireAuthentication
-def fileManagerDeleteHander():
+def fileListDeleteHander():
     user = authManager.getUserData()
     fid = int(request.form['file'])
     id = user['id']
@@ -351,40 +369,32 @@ def fileManagerDeleteHander():
     return redirect(url_for("fileManagerGetHandler"))
 
 
-@application.route('/fileManager', methods=['GET'])
+@application.route('/file-list', methods=['GET'])
 @authManager.requireAuthentication
-def fileManagerGetHandler():
+def fileListGetHandler():
     user = authManager.getUserData()
-    if request.method == 'GET':
-        if not user:
-            abort(403)
-        id = user['id']
-        #Get the user's profile from the DB and zip it first
-        with dataSessionMgr.session_scope() as dbSession:
-            files = query.getFilesByUser(dbSession,id)
-            files = query.extractOutput(files)
 
-        if files != None:
-            fileManagerRendered = fileManagerTemplate.render(files=files)
-            return bodyTemplate.render(
-                title="File Manager",
-                body = fileManagerRendered,
-                user=user,
-                # Todo: Incorporate removeURL here
-                location=request.url)
+    id = user['id']
+    #Get the user's profile from the DB and zip it first
+    with dataSessionMgr.session_scope() as dbSession:
+        files = query.getFilesByUser(dbSession,id)
+        files = query.extractOutput(files)
 
-    fileManagerRendered = fileManagerTemplate.render()
+    if not files:
+        files = [];
+
+    fileManagerRendered = fileListTemplate.render(files=files)
     return bodyTemplate.render(
-                title="File Manager",
-                body = fileManagerRendered,
-                user=user,
-                # Todo: Incorporate removeURL here
-                location=request.url)
+        title="File Manager",
+        body = fileManagerRendered,
+        user=user,
+        # Todo: Incorporate removeURL here
+        location=request.url)
 
 
-@application.route('/fileManager', methods=['POST'])
+@application.route('/file-list', methods=['POST'])
 @authManager.requireAuthentication
-def fileManagerPostHandler():
+def fileListPostHandler():
     user = authManager.getUserData()
 
     # Get the user session and file to upload
