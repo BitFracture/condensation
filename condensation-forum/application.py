@@ -243,7 +243,7 @@ def threadGetHandler(tid):
     user = authManager.getUserData();
     removeUrl="/"
     if user:
-        removeUrl=url_for("deleteUserHandler", uid=user["id"])    
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])
     threadRendered = threadTemplate.render(
             thread=thread,
             thread_attachments=thread_attachments,
@@ -273,8 +273,8 @@ def loginCallback():
                 if not query.getUser(dbSession, user["id"]):
                     print("User created: " + user["name"], file=sys.stderr)
                     dbSession.add(schema.User(
-                        id=user["id"], 
-                        name=user["name"], 
+                        id=user["id"],
+                        name=user["name"],
                         profile_picture=user["picture"]))
                     flash("Account Created")
         except:
@@ -300,8 +300,6 @@ def deleteUserHandler(uid):
             flash("Account Deletion Failed")
 
     return redirect(authManager.LOGOUT_ROUTE)
-        
-
 
 
 @authManager.logoutCallback
@@ -318,39 +316,40 @@ def logoutCallback():
 def fileManagerDeleteHander():
     user = authManager.getUserData()
     fid = int(request.form['file'])
-    
-    if not user:
-        abort(403)
     id = user['id']
 
-    #delete the file by Cloud_key in AWS S3
+    # Find the file in S3
     try:
         with dataSessionMgr.session_scope() as dbSession:
             file1 = query.getFileById(dbSession,fid)
             file1 = query.extractOutput(file1)
     except Exception as e:
-        flash("Something happen",e);
-        return e
-        
+        flash("An unexpected error occurred while finding the file in our cloud storage. "\
+                + "Please try again later.<br/><br/>", e);
+        return redirect(url_for("fileManagerGetHandler"))
+
+    # Delete the file from S3
     key = file1['cloud_key']
     try:
         s3client.delete_object(Bucket=bucket_name,Key=key)
     except Exception as e:
-        flash("Something happen",e);
-        return e
-    
-    #delete the file by fileID in DB
+        flash("An unexpected error occurred while removing the file from our cloud storage. "\
+                + "Please try again later.<br/><br/>", e);
+        return redirect(url_for("fileManagerGetHandler"))
+
+    # Delete the file by fileID in RDS
     try:
         with dataSessionMgr.session_scope() as dbSession:
             file = query.getFileById(dbSession,fid)
             if file:
                 dbSession.delete(file)
-                flash("File Deleted")
     except Exception as e:
-        flash("Something happen",e);
-        return e
-  
+        flash("An unexpected error occurred while removing this file from our database. "\
+                + "Please try again later.<br/><br/>", e);
+        return redirect(url_for("fileManagerGetHandler"))
+
     return redirect(url_for("fileManagerGetHandler"))
+
 
 @application.route('/fileManager', methods=['GET'])
 @authManager.requireAuthentication
@@ -373,7 +372,7 @@ def fileManagerGetHandler():
                 user=user,
                 # Todo: Incorporate removeURL here
                 location=request.url)
-        
+
     fileManagerRendered = fileManagerTemplate.render()
     return bodyTemplate.render(
                 title="File Manager",
@@ -387,55 +386,59 @@ def fileManagerGetHandler():
 @authManager.requireAuthentication
 def fileManagerPostHandler():
     user = authManager.getUserData()
-    # do stuff when the form is submitted
-    if not user:
-        abort(403)
+
+    # Get the user session and file to upload
     id = user['id']
     file = request.files['file']
-    # if user does not select file, browser also
-    # submit a empty part without filename
-    if file.filename.strip() == '':
-        flash('No selected file')
+
+    # If user does not select file, browser also submit a empty part without filename
+    if not file or file.filename.strip() == '':
+        flash('You must select a file in order to upload one.')
         return redirect(request.url)
-    if file:
-        # Determine shortened file name (secure)
-        filename = secure_filename(file.filename.strip())
-        while (len(filename) > 50):
-            cutString = len(filename)%50
-            filename = filename[cutString:len(filename)]
 
-         # Determine the S3 key
+    # Determine shortened file name (secure)
+    filename = secure_filename(file.filename.strip())
+    while (len(filename) > 50):
+        cutString = len(filename) % 50
+        filename = filename[cutString:len(filename)]
+
+    # Determine the S3 key
+    try:
+        myUuid = uuid.uuid4().hex
+        fn, fileExtension = os.path.splitext(filename)
+        key = id + "/" + myUuid + fileExtension.lower()
+
+        # If the file already exists, we need to warn and abort
         try:
-            myUuid = uuid.uuid4().hex
-            fn, fileExtension = os.path.splitext(filename)
-            key = id + "/" + myUuid + fileExtension
-
-            #Upload to AWS S3 first
-            s3client.upload_fileobj(file, bucket_name, key, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
-            url = "https://s3-us-west-2.amazonaws.com/condensation-forum/" + key
-
-            #Check the existence of the file first, only store the file in DB if it's new
-            try:
-                with dataSessionMgr.session_scope() as dbSession:
-                    checkFile = query.getFileByName(dbSession,id,filename)
-                    checkFile = query.extractOutput(checkFile)
-            except Exception as e:
-                flash("Something happen",e);
-                return e
-            if checkFile==None:
-                storeToDB(id, url, key, filename)
-            flash('Upload Successfully')
-            return redirect("/fileManager")
+            with dataSessionMgr.session_scope() as dbSession:
+                checkFile = query.getFileByName(dbSession,id,filename)
+                checkFile = query.extractOutput(checkFile)
         except Exception as e:
-            flash("Something happen",e);
+            flash("Something happen", e);
             return e
 
-    else:
-        return redirect("/fileManager")
-        
-        # redirect to end the POST handling
-        # the redirect can be to the same route or somewhere else
-    return redirect("/fileManager")
+        if checkFile is not None:
+            flash("That file already exists. Please delete it first and then re-upload. " \
+                    + "This <b>will break</b> any attachments you have made with this file.")
+            return redirect(request.url)
+
+        # Since the file does not exist, we will upload it now
+        s3client.upload_fileobj(file, bucket_name, key, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
+        url = "https://s3-us-west-2.amazonaws.com/condensation-forum/" + key
+
+        storeToDB(id, url, key, filename)
+
+        return redirect(request.url)
+    except Exception as e:
+        flash("An unexpected error occurred while uploading your file. Things to try: "\
+                 + "<br/> - Rename the file to something shorter"\
+                 + "<br/> - Make sure the file size is under 1 megabyte"\
+                 + "<br/> - Make sure there are no special characters in the file name<br/><br/>", e);
+        return redirect(request.url)
+
+    # Redirect to end the POST handling the redirect can be to the same route or somewhere else
+    return redirect(request.url)
+
 
 def storeToDB(userID,url,key,filename):
     """This method is used to store the data uploaded into DB"""
@@ -447,6 +450,7 @@ def storeToDB(userID,url,key,filename):
     except Exception as e:
         flash("Something happen: ",e)
         return e
+
 
 # Run Flask app now
 if __name__ == "__main__":
