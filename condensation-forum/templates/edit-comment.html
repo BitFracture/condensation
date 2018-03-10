@@ -5,7 +5,11 @@
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-md-12"> 
-                            <h3>Edit Thread</h3> 
+                            {%if edit%}
+                            <h3>Edit Comment</h3> 
+                            {%else%}
+                            <h3>Create Comment</h3> 
+                            {%endif%}
                         </div>
                     </div>
                     <div class="row">

@@ -209,7 +209,7 @@ def editThreadHandler(tid):
          form.body.data = thread.body
 
     #error handling is done in the html forms
-    rendered = editThreadTemplate.render(form=form)
+    rendered = editThreadTemplate.render(form=form, edit = True)
     return bodyTemplate.render(
             title="Edit Thread",
             body=rendered,
@@ -310,7 +310,7 @@ def editCommentHandler(cid):
          form.body.data = comment.body
 
     #error handling is done in the html forms
-    rendered = editCommentTemplate.render(form=form)
+    rendered = editCommentTemplate.render(form=form, edit = True)
     return bodyTemplate.render(
             title="Edit Comment",
             body=rendered,
