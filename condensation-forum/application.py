@@ -115,15 +115,10 @@ def indexGetHandler():
             createUrl=createThreadUrl)
 
     user = authManager.getUserData()
-    removeUrl="/"
-    if user:
-        removeUrl=url_for("deleteUserHandler", uid=user["id"])
-
     return bodyTemplate.render(
             title="Home",
             body=homeRendered,
             user=user,
-            removeUrl=removeUrl,
             location=request.url)
 
 
@@ -156,16 +151,13 @@ def newThreadHandler():
             return redirect(url_for("indexGetHandler"))
 
     #error handling is done in the html forms
-    user = authManager.getUserData()
-    removeUrl="/"
-    if user:
-        removeUrl=url_for("deleteUserHandler", uid=user["id"])
     rendered = createThreadTemplate.render(form=form)
+
+    user = authManager.getUserData()
     return bodyTemplate.render(
             title="Create Thread",
             body=rendered,
             user=user,
-            removeUrl=removeUrl,
             location=url_for('indexGetHandler', _external=True))
 
 
@@ -196,16 +188,12 @@ def newCommentHandler(tid):
 
 
     #error handling is done in the html forms
-    user = authManager.getUserData()
-    removeUrl="/"
-    if user:
-        removeUrl=url_for("deleteUserHandler", uid=user["id"])
     rendered = createCommentTemplate.render(form=form)
+    user = authManager.getUserData()
     return bodyTemplate.render(
             title="Reply",
             body=rendered,
             user=user,
-            removeUrl=removeUrl,
             location=url_for('indexGetHandler', _external=True))
 
 
@@ -228,10 +216,6 @@ def threadGetHandler(tid):
         comments = query.extractOutput(comments)
         thread = query.extractOutput(thread)
 
-    user = authManager.getUserData();
-    removeUrl="/"
-    if user:
-        removeUrl=url_for("deleteUserHandler", uid=user["id"])    
     threadRendered = threadTemplate.render(
             thread=thread,
             thread_attachments=thread_attachments,
@@ -240,10 +224,11 @@ def threadGetHandler(tid):
             comment_attachments=comment_attachments,
             comment_users=comment_users,
             replyUrl=replyUrl)
+
+    user = authManager.getUserData();
     return bodyTemplate.render(
             title="Thread",
             body=threadRendered,
-            removeUrl=removeUrl,
             user=user,
             location=request.url)
 
@@ -271,13 +256,13 @@ def loginCallback():
             return redirect(authManager.LOGOUT_ROUTE)
 
 
-@application.route("/delete-user?id=<int:uid>", methods=["GET"])
+@application.route("/delete-user", methods=["GET"])
 @authManager.requireAuthentication
-def deleteUserHandler(uid):
+def deleteUserHandler():
     """Deletes a user and redirects them home"""
     user = authManager.getUserData()
-    print("delete", uid, user["id"], file = sys.stderr)
-    if user and int(user["id"]) == uid:
+    print("delete", user["id"], file = sys.stderr)
+    if user:
         try:
             with dataSessionMgr.session_scope() as dbSession:
                 account = query.getUser(dbSession, user["id"])
