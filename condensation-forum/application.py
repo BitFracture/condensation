@@ -162,7 +162,7 @@ def newThreadHandler():
             #redirect to the created thread view
             return redirect(url_for("threadGetHandler", tid=tid))
         except:
-            flash("Comment Creation Failed")
+            flash("Thread Creation Failed")
             return redirect(url_for("indexGetHandler"))
 
     #error handling is done in the html forms
@@ -255,21 +255,24 @@ def newCommentHandler(tid):
     form = CreateCommentForm()
 
     user = authManager.getUserData()
+    print(user, file=sys.stderr)
     if not user:
         abort(403)
     if form.validate_on_submit():
-        try:
-            with dataSessionMgr.session_scope() as dbSession:
-                user = query.getUser(dbSession, user["id"])
-                thread = query.getThreadById(dbSession, tid)
-                thread.replies.append(schema.Comment(user=user, body=form.body.data))
+#        try:
+        with dataSessionMgr.session_scope() as dbSession:
+            print(user, file=sys.stderr)
+            user = query.getUser(dbSession, user["id"])
+            print(user, file=sys.stderr)
+            thread = query.getThreadById(dbSession, tid)
+            thread.replies.append(schema.Comment(user=user, body=form.body.data))
 
-            flash("Comment Created")
-            #redirect to the created thread view
-            return redirect(url_for("threadGetHandler", tid=tid))
-        except:
-            flash("Comment Creation Failed")
-            return redirect(url_for("indexGetHandler"))
+        flash("Comment Created")
+        #redirect to the created thread view
+        return redirect(url_for("threadGetHandler", tid=tid))
+#        except:
+#            flash("Comment Creation Failed")
+#            return redirect(url_for("indexGetHandler"))
 
     rendered = editCommentTemplate.render(form=form)
     user = authManager.getUserData()
@@ -361,7 +364,7 @@ def threadGetHandler(tid):
         user = authManager.getUserData()
         uid = user["id"] if user else 0
 
-        op = thread.user.name
+        op = query.extractOutput(thread.user)
         op_permission = thread.user_id == uid
 
         replyUrl = url_for("newCommentHandler", tid=thread.id)
@@ -373,7 +376,7 @@ def threadGetHandler(tid):
         edit_permissions = []
         for comment in comments:
             comment_attachments.append(query.extractOutput(comment.attachments))
-            comment_users.append(comment.user.name)
+            comment_users.append(query.extractOutput(comment.user))
             edit_permissions.append(uid == comment.user_id)
 
         comments = query.extractOutput(comments)
