@@ -209,23 +209,17 @@ def editThreadHandler(tid):
          form.body.data = thread.body
 
     #error handling is done in the html forms
-    user = authManager.getUserData()
-    removeUrl="/"
-    if user:
-        removeUrl=url_for("deleteUserHandler", uid=user["id"])
     rendered = editThreadTemplate.render(form=form)
     return bodyTemplate.render(
-            title="Create Thread",
+            title="Edit Thread",
             body=rendered,
             user=user,
-            removeUrl=removeUrl,
             location=url_for('indexGetHandler', _external=True))
 
-@application.route("/delet-thread?tid=<int:tid>", methods=["GET"])
+@application.route("/delete-thread?tid=<int:tid>", methods=["GET"])
 @authManager.requireAuthentication
 def deleteThreadHandler(tid):
     """Deletes a thread."""
-
 
     #verify security no error handling because if this fails we have problems, we should fail too
     user = authManager.getUserData()
@@ -243,18 +237,6 @@ def deleteThreadHandler(tid):
     except:
         flash("Thread Deletion Failed")
     return redirect(url_for("indexGetHandler"))
-
-
-
-
-    return bodyTemplate.render(
-            title="Create Thread",
-            body=rendered,
-            user=user,
-            removeUrl=removeUrl,
-            location=url_for('indexGetHandler', _external=True))
-
-
 
 @application.route("/new-comment?<int:tid>", methods=["GET", "POST"])
 @authManager.requireAuthentication
@@ -282,19 +264,80 @@ def newCommentHandler(tid):
             return redirect(url_for("indexGetHandler"))
 
 
-    #error handling is done in the html forms
-    user = authManager.getUserData()
-    removeUrl="/"
-    if user:
-        removeUrl=url_for("deleteUserHandler", uid=user["id"])
     rendered = editCommentTemplate.render(form=form)
     return bodyTemplate.render(
             title="Reply",
             body=rendered,
             user=user,
-            removeUrl=removeUrl,
             location=url_for('indexGetHandler', _external=True))
 
+@application.route("/edit-comment?cid=<int:cid>", methods=["GET", "POST"])
+@authManager.requireAuthentication
+def editCommentHandler(cid):
+    """Renders an existing comment to be modified """
+
+    print("hello world comment edit", file=sys.stderr)
+    #do not allow unauthenticated users to submit
+    form = CreateCommentForm()
+
+    #verify security no error handling because if this fails we have problems, we should fail too
+    user = authManager.getUserData()
+    if not user:
+        abort(403)
+    with dataSessionMgr.session_scope() as dbSession:
+         comment = query.getCommentById(dbSession, cid)
+         if user["id"] != comment.user_id:
+             abort(403)
+
+    if form.validate_on_submit():
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                comment = query.getCommentById(dbSession, cid)
+                tid = comment.thread_id
+                if user["id"] != comment.user_id:
+                    abort(403)
+                comment.body = form.body.data
+            flash("Comment Updated")
+            #redirect to the created thread view
+            return redirect(url_for("threadGetHandler", tid=tid))
+        except:
+            flash("Comment Update Failed")
+            return redirect(url_for("indexGetHandler"))
+
+    #populate with old data from forms
+    with dataSessionMgr.session_scope() as dbSession:
+         comment = query.getCommentById(dbSession, cid)
+         form.body.data = comment.body
+
+    #error handling is done in the html forms
+    rendered = editCommentTemplate.render(form=form)
+    return bodyTemplate.render(
+            title="Edit Comment",
+            body=rendered,
+            user=user,
+            location=url_for('indexGetHandler', _external=True))
+
+@application.route("/delete-comment?cid=<int:cid>", methods=["GET"])
+@authManager.requireAuthentication
+def deleteCommentHandler(cid):
+    """Deletes a comment."""
+
+    #verify security no error handling because if this fails we have problems, we should fail too
+    user = authManager.getUserData()
+    if not user:
+        abort(403)
+    try:
+        with dataSessionMgr.session_scope() as dbSession:
+            comment = query.getCommentById(dbSession, cid)
+            if not comment:
+                abort(404)
+            if user["id"] != comment.user_id:
+                abort(403)
+            dbSession.delete(comment)
+        flash("Comment Deleted")
+    except:
+        flash("Comment Deletion Failed")
+    return redirect(url_for("indexGetHandler"))
 
 @application.route("/thread/<int:tid>)", methods=["GET"])
 @authManager.enableAuthentication
@@ -312,7 +355,6 @@ def threadGetHandler(tid):
         op = thread.user.name
         op_permission = thread.user_id == uid
         
-
         replyUrl = url_for("newCommentHandler", tid=thread.id)
         post_attachments = query.extractOutput(thread.attachments)
 

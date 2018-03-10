@@ -109,12 +109,12 @@
                     <hr>
                     <div class="row">
                         <div class="col-md-2">    
-                            <button type="button" class="btn btn-info" onclick="location.href='/edit-comment?cid={{comment['id']}}';">Edit Comment</button>  
+                            <button type="button" class="btn btn-info" onclick='location.href="{{url_for("editCommentHandler", cid=comment["id"])}}";'>Edit Comment</button>  
                         </div>
                         <div class="col-md-8">
                         </div>
                         <div class="col-md-2">    
-                            <button type="button" class="btn btn-danger" onclick="location.href='/delete-comment?cid={{comment['id']}}';">Delete Comment</button>  
+                            <button type="button" class="btn btn-danger" onclick='location.href="{{url_for("deleteCommentHandler", cid=comment["id"])}}";'>Delete Comment</button>  
                         </div>
                     </div>
                     {%endif%}
