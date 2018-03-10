@@ -57,7 +57,6 @@ def getFilesByUser(dbSession, user_id):
     return None
 
 
-
 def getThreadsByUser(dbSession, user_id):
     """gets all threads associated with a user"""
     threads = dbSession.query(Thread).filter(Thread.user_id == user_id)
