@@ -80,14 +80,16 @@ templateEnv = jinja2.Environment(loader=templateLoader)
 templateEnv.globals.update(zip=zip)
 #we also want to view our flashed messages
 templateEnv.globals.update(get_flashed_messages=get_flashed_messages)
+#generate urls for buttons in the view
+templateEnv.globals.update(url_for=url_for)
 
 
 bodyTemplate = templateEnv.get_template("body.html")
 bodySimpleTemplate = templateEnv.get_template("body-simple.html")
 homeTemplate = templateEnv.get_template("home.html")
 threadTemplate = templateEnv.get_template("thread.html")
-createThreadTemplate = templateEnv.get_template("new-thread.html")
-createCommentTemplate = templateEnv.get_template("new-comment.html")
+editThreadTemplate = templateEnv.get_template("edit-thread.html")
+editCommentTemplate = templateEnv.get_template("edit-comment.html")
 fileManagerTemplate = templateEnv.get_template("file-manager.html")
 fileListTemplate = templateEnv.get_template("file-list.html")
 
@@ -103,6 +105,8 @@ def indexGetHandler():
     """
     Returns the template "home" wrapped by "body" served as HTML
     """
+
+
     threads = None
     #grab threads ordered by time, and zip them with some usernames
     with dataSessionMgr.session_scope() as dbSession:
@@ -115,17 +119,15 @@ def indexGetHandler():
         threads = query.getThreadsByCommentTime(dbSession)
         urls = [url_for("threadGetHandler", tid=thread.id) for thread in threads]
         usernames = [thread.user.name for thread in threads]
+        user = authManager.getUserData()
         threads = query.extractOutput(threads)
 
-    #handle thread creation button
-    createThreadUrl = url_for("newThreadHandler")
 
 
     homeRendered = homeTemplate.render(
             threads=threads,
             urls=urls,
-            usernames=usernames,
-            createUrl=createThreadUrl)
+            usernames=usernames)
 
     user = authManager.getUserData()
     return bodyTemplate.render(
@@ -164,15 +166,85 @@ def newThreadHandler():
             return redirect(url_for("indexGetHandler"))
 
     #error handling is done in the html forms
-    rendered = createThreadTemplate.render(form=form)
-
     user = authManager.getUserData()
+    removeUrl="/"
+    if user:
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])
+    rendered = editThreadTemplate.render(form=form)
+
     return bodyTemplate.render(
             title="Create Thread",
             body=rendered,
             user=user,
             location=url_for('indexGetHandler', _external=True))
 
+@application.route("/edit-thread?tid=<int:tid>", methods=["GET", "POST"])
+@authManager.requireAuthentication
+def editThreadHandler(tid):
+    """Renders an existing threaed to be modified """
+
+    #do not allow unauthenticated users to submit
+    form = CreateThreadForm()
+
+    #verify security no error handling because if this fails we have problems, we should fail too
+    user = authManager.getUserData()
+    if not user:
+        abort(403)
+    with dataSessionMgr.session_scope() as dbSession:
+         thread = query.getThreadById(dbSession, tid)
+         if user["id"] != thread.user_id:
+             abort(403)
+
+    if form.validate_on_submit():
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                thread = query.getThreadById(dbSession, tid)
+                if user["id"] != thread.user_id:
+                    abort(403)
+                thread.heading = form.heading.data
+                thread.body = form.body.data
+            flash("Thread Updated")
+            #redirect to the created thread view
+            return redirect(url_for("threadGetHandler", tid=tid))
+        except:
+            flash("Thread Update Failed")
+            return redirect(url_for("indexGetHandler"))
+
+    #populate with old data from forms
+    with dataSessionMgr.session_scope() as dbSession:
+         thread = query.getThreadById(dbSession, tid)
+         form.heading.data = thread.heading
+         form.body.data = thread.body
+
+    #error handling is done in the html forms
+    rendered = editThreadTemplate.render(form=form, edit = True)
+    return bodyTemplate.render(
+            title="Edit Thread",
+            body=rendered,
+            user=user,
+            location=url_for('indexGetHandler', _external=True))
+
+@application.route("/delete-thread?tid=<int:tid>", methods=["GET"])
+@authManager.requireAuthentication
+def deleteThreadHandler(tid):
+    """Deletes a thread."""
+
+    #verify security no error handling because if this fails we have problems, we should fail too
+    user = authManager.getUserData()
+    if not user:
+        abort(403)
+    try:
+        with dataSessionMgr.session_scope() as dbSession:
+            thread = query.getThreadById(dbSession, tid)
+            if not thread:
+                abort(404)
+            if user["id"] != thread.user_id:
+                abort(403)
+            dbSession.delete(thread)
+        flash("Thread Deleted")
+    except:
+        flash("Thread Deletion Failed")
+    return redirect(url_for("indexGetHandler"))
 
 @application.route("/new-comment?<int:tid>", methods=["GET", "POST"])
 @authManager.requireAuthentication
@@ -199,16 +271,82 @@ def newCommentHandler(tid):
             flash("Comment Creation Failed")
             return redirect(url_for("indexGetHandler"))
 
-
-    #error handling is done in the html forms
-    rendered = createCommentTemplate.render(form=form)
+    rendered = editCommentTemplate.render(form=form)
     user = authManager.getUserData()
+
     return bodyTemplate.render(
             title="Reply",
             body=rendered,
             user=user,
             location=url_for('indexGetHandler', _external=True))
 
+@application.route("/edit-comment?cid=<int:cid>", methods=["GET", "POST"])
+@authManager.requireAuthentication
+def editCommentHandler(cid):
+    """Renders an existing comment to be modified """
+
+    print("hello world comment edit", file=sys.stderr)
+    #do not allow unauthenticated users to submit
+    form = CreateCommentForm()
+
+    #verify security no error handling because if this fails we have problems, we should fail too
+    user = authManager.getUserData()
+    if not user:
+        abort(403)
+    with dataSessionMgr.session_scope() as dbSession:
+         comment = query.getCommentById(dbSession, cid)
+         if user["id"] != comment.user_id:
+             abort(403)
+
+    if form.validate_on_submit():
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                comment = query.getCommentById(dbSession, cid)
+                tid = comment.thread_id
+                if user["id"] != comment.user_id:
+                    abort(403)
+                comment.body = form.body.data
+            flash("Comment Updated")
+            #redirect to the created thread view
+            return redirect(url_for("threadGetHandler", tid=tid))
+        except:
+            flash("Comment Update Failed")
+            return redirect(url_for("indexGetHandler"))
+
+    #populate with old data from forms
+    with dataSessionMgr.session_scope() as dbSession:
+         comment = query.getCommentById(dbSession, cid)
+         form.body.data = comment.body
+
+    #error handling is done in the html forms
+    rendered = editCommentTemplate.render(form=form, edit = True)
+    return bodyTemplate.render(
+            title="Edit Comment",
+            body=rendered,
+            user=user,
+            location=url_for('indexGetHandler', _external=True))
+
+@application.route("/delete-comment?cid=<int:cid>", methods=["GET"])
+@authManager.requireAuthentication
+def deleteCommentHandler(cid):
+    """Deletes a comment."""
+
+    #verify security no error handling because if this fails we have problems, we should fail too
+    user = authManager.getUserData()
+    if not user:
+        abort(403)
+    try:
+        with dataSessionMgr.session_scope() as dbSession:
+            comment = query.getCommentById(dbSession, cid)
+            if not comment:
+                abort(404)
+            if user["id"] != comment.user_id:
+                abort(403)
+            dbSession.delete(comment)
+        flash("Comment Deleted")
+    except:
+        flash("Comment Deletion Failed")
+    return redirect(url_for("indexGetHandler"))
 
 @application.route("/thread/<int:tid>)", methods=["GET"])
 @authManager.enableAuthentication
@@ -219,13 +357,25 @@ def threadGetHandler(tid):
     with dataSessionMgr.session_scope() as dbSession:
         thread = query.getThreadById(dbSession, tid)
         thread_attachments = query.extractOutput(thread.attachments)
+
+        user = authManager.getUserData()
+        uid = user["id"] if user else 0
+
         op = thread.user.name
+        op_permission = thread.user_id == uid
 
         replyUrl = url_for("newCommentHandler", tid=thread.id)
         post_attachments = query.extractOutput(thread.attachments)
+
         comments = query.getCommentsByThread(dbSession, thread.id)
-        comment_attachments = [query.extractOutput(comment.attachments) for comment in comments]
-        comment_users = [comment.user.name for comment in comments]
+        comment_attachments =[]
+        comment_users = []
+        edit_permissions = []
+        for comment in comments:
+            comment_attachments.append(query.extractOutput(comment.attachments))
+            comment_users.append(comment.user.name)
+            edit_permissions.append(uid == comment.user_id)
+
         comments = query.extractOutput(comments)
         thread = query.extractOutput(thread)
 
@@ -233,9 +383,11 @@ def threadGetHandler(tid):
             thread=thread,
             thread_attachments=thread_attachments,
             op=op,
+            op_permission=op_permission,
             comments=comments,
             comment_attachments=comment_attachments,
             comment_users=comment_users,
+            edit_permissions=edit_permissions,
             replyUrl=replyUrl)
 
     user = authManager.getUserData();

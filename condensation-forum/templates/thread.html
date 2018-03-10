@@ -23,6 +23,7 @@
                         <p class="text-md-left">{{thread["body"]}}</p> 
                     </div>
                     {% if thread_attachments%}
+                    <hr>
                     <div class="row">
                         <div class="col-md-12"> 
                             <b>Attachments</b>
@@ -40,6 +41,19 @@
                         </ul>
                     </div>
                     {% endif %}
+                    {% if op_permission %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-2">    
+                            <button type="button" class="btn btn-info" onclick='location.href="{{url_for("editThreadHandler", tid=thread["id"])}}";'>Edit Thread</button>  
+                        </div>
+                        <div class="col-md-8">
+                        </div>
+                        <div class="col-md-2">    
+                            <button type="button" class="btn btn-danger" onclick='location.href="{{url_for("deleteThreadHandler", tid=thread["id"])}}";'>Delete Thread</button>  
+                        </div>
+                    </div>
+                    {%endif%}
                     <hr>
                     <div class="row">
                         <div class="col-md-12">    
@@ -53,7 +67,7 @@
     </div>
 </div>
 {%if comments%}
-{%for comment, user, attachments in zip(comments, comment_users, comment_attachments)%}
+{%for comment, user, attachments, permission in zip(comments, comment_users, comment_attachments, edit_permissions)%}
 <div class="panel panel-default">
     <div class="panel-body">
         <div class="row">
@@ -73,6 +87,7 @@
                         <p class="text-md-left">{{comment["body"]}}</p> 
                     </div>
                     {% if attachments%}
+                    <hr>
                     <div class="row">
                         <div class="col-md-12"> 
                             <b>Attachments</b>
@@ -90,6 +105,19 @@
                         </ul>
                     </div>
                     {% endif %}
+                    {% if permission %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-2">    
+                            <button type="button" class="btn btn-info" onclick='location.href="{{url_for("editCommentHandler", cid=comment["id"])}}";'>Edit Comment</button>  
+                        </div>
+                        <div class="col-md-8">
+                        </div>
+                        <div class="col-md-2">    
+                            <button type="button" class="btn btn-danger" onclick='location.href="{{url_for("deleteCommentHandler", cid=comment["id"])}}";'>Delete Comment</button>  
+                        </div>
+                    </div>
+                    {%endif%}
                 </div>
             </div>
         </div>

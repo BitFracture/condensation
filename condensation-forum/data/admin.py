@@ -31,9 +31,9 @@ def generate_seeds():
     values["key1"] = "aws1"
     values["key2"] = "aws2"
     values["key3"] = "aws3"
-    values["url1"] = "www.joes-crematorium.com"
-    values["url2"] = "www.parrot-muzzles-r-us.com"
-    values["url3"] = "www.tire-photos.com"
+    values["url1"] = "https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg?w=940&h=650&auto=compress&cs=tinysrgb"
+    values["url2"] = "https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg?w=940&h=650&auto=compress&cs=tinysrgb"
+    values["url3"] = "https://images.pexels.com/photos/416160/pexels-photo-416160.jpeg?w=940&h=650&auto=compress&cs=tinysrgb"
     values["heading1"] = "First! Lol"
     values["heading2"] = "TIL spiders are terrible"
     values["heading3"] = "I ate a melon, rind and all. AMA"
@@ -115,9 +115,9 @@ def populate(session):
     users = [ User(id=values["uid1"], name=values["name1"], profile_picture=values["pic1"]), 
             User(id=values["uid2"], name=values["name2"], profile_picture=values["pic2"]), 
             User(id=values["uid3"], name=values["name3"], profile_picture=values["pic3"])]
-    files = [File(name=values["fname1"], url=["url1"], cloud_key=values["key1"]), 
-            File(name=values["fname2"], url=["url2"], cloud_key=values["key2"]), 
-            File(name=values["fname3"], url=["url3"], cloud_key=values["key3"])]
+    files = [File(name=values["fname1"], url=values["url1"], cloud_key=values["key1"]), 
+            File(name=values["fname2"], url=values["url2"], cloud_key=values["key2"]), 
+            File(name=values["fname3"], url=values["url3"], cloud_key=values["key3"])]
     threads = [Thread(heading=values["heading1"], body=values["body1"]),
             Thread(heading=values["heading2"], body=values["body2"]),
             Thread(heading=values["heading3"], body=values["body3"])]
