@@ -29,8 +29,8 @@
         {% with messages = get_flashed_messages() %}
         {% for message in messages %}
 
-        <div>
-            <b>{{message}}</b>
+        <div style="border: 2px dashed #DD0000; border-radius: 12px; padding: 16px; margin-top: 16px; margin-bottom: 16px;">
+            {{message}}
         </div>
 
         {% endfor %}

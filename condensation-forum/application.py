@@ -426,7 +426,7 @@ def fileListPostHandler():
 
         if checkFile is not None:
             flash("That file already exists. Please delete it first and then re-upload. " \
-                    + "This <b>will break</b> any attachments you have made with this file.")
+                    + "This will <b>remove</b> any attachments you have made to this file.")
             return redirect(request.url)
 
         # Since the file does not exist, we will upload it now
