@@ -71,7 +71,7 @@
 								<li><a href="/file-manager">File Manager</li>
                                 <li><a href="/logout{% if location %}?redirect={{ location }}{% endif %}">Sign Out</a></li>
                                 <li><a href="/logout?redirect=https://www.google.com/accounts/Logout{% if location %}?continue=https://appengine.google.com/_ah/logout?continue={{ location }}{% endif %}">Sign Out of Google</a></li>
-                                <li><a href="{{removeUrl}}">Delete Account</a></li>
+                                <li><a href="/delete-user">Delete Account</a></li>
                             </ul>
                         </li>
                         {% else %}
