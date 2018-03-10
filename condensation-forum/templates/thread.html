@@ -10,15 +10,21 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-12"> 
-                            <h4>{{op}}</h4> 
+                        <div class="col-md-2"> 
+                            <img src="{{op["profile_picture"]}}" class="img-responsive" alt="{{op["name"]}}-profile-picture"> 
+                        </div>
+                        <div class="col-md-10">
+                            <div class="containter-fluid">
+                                <div class="row"> 
+                                    <h4>{{op["name"]}}</h4> 
+                                </div>
+                                <div class="row"> 
+                                    <em>{{thread["time_modified"].strftime("%m/%d/%y %H:%M")}}</em> 
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-12"> 
-                            <em>{{thread["time_modified"].strftime("%m/%d/%y %H:%M")}}</em> 
-                        </div>
-                    </div>
+                    <hr>
                     <div class="row well">
                         <p class="text-md-left">{{thread["body"]}}</p> 
                     </div>
@@ -74,15 +80,21 @@
             <div class="col-md-12">
                 <div class="container-fluid">
                     <div class="row">
-                        <div class="col-md-12"> 
-                            <h4>{{user}}</h4> 
+                        <div class="col-md-2"> 
+                            <img src="{{user["profile_picture"]}}" class="img-responsive" alt="{{user["name"]}}-profile-picture"> 
+                        </div>
+                        <div class="col-md-10"> 
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <h4>{{user["name"]}}</h4> 
+                                </div>
+                                <div class="row">
+                                    <em>{{comment["time_modified"].strftime("%m/%d/%y %H:%M")}}</em> 
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-12"> 
-                            <em>{{comment["time_modified"].strftime("%m/%d/%y %H:%M")}}</em> 
-                        </div>
-                    </div>
+                    <hr>
                     <div class="row well">
                         <p class="text-md-left">{{comment["body"]}}</p> 
                     </div>

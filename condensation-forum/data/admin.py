@@ -19,7 +19,7 @@ def generate_seeds():
     values["name1"] = "Bilbo Baggins"
     values["name2"] = "Frodo Baggins"
     values["name3"] = "Gollum"
-    values["pic1"] = "https://vignette.wikia.nocookie.net/lotr/images/e/e9/Crazy_bilbo.jpg/revision/latest/scale-to-width-down/180?cb=20121220104853"
+    values["pic1"] = "http://37.media.tumblr.com/9b1dd3fca479e767b605c308ece10461/tumblr_n067vrubdg1s9c6nao4_250.gif"
     values["pic2"] = "https://i0.wp.com/www.tor.com/wp-content/uploads/2015/10/Frodo01.jpg?fit=732%2C+9999&crop=0%2C0%2C100%2C385px&ssl=1"
     values["pic3"] = "http://www.nydailynews.com/img/2008/07/28/amd_cheney.jpg"
     values["uid1"] = "107225912631866552739"
