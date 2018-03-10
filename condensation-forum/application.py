@@ -2,9 +2,9 @@
 An AWS Python3+Flask web app.
 """
 
-from flask import Flask, redirect, url_for, request, session, flash, get_flashed_messages
+from flask import Flask, redirect, url_for, request, session, flash, get_flashed_messages, render_template
 from flask_oauthlib.client import OAuth
-import boto3
+import boto3,botocore
 import jinja2
 from boto3.dynamodb.conditions import Key, Attr
 import urllib.request
@@ -19,7 +19,9 @@ from data.session import SessionManager
 from data import query, schema
 from forms import CreateThreadForm, CreateCommentForm
 import inspect
-
+from werkzeug.utils import secure_filename
+import uuid
+import os
 
 ###############################################################################
 #FLASK CONFIG
@@ -54,6 +56,14 @@ authManager = GoogleOAuthManager(
         flaskApp     = application,
         clientId     = config.get("oauthClientId"),
         clientSecret = config.get("oauthClientSecret"))
+#This is the Upload requirement section
+bucket = s3.Bucket('condensation-forum')
+bucket_name = 'condensation-forum'
+s3client = boto3.client(
+   "s3",
+   aws_access_key_id=config.get("accessKey"),
+   aws_secret_access_key=config.get("secretKey")
+)
 
 #database connection
 dataSessionMgr = SessionManager(
@@ -73,10 +83,13 @@ templateEnv.globals.update(get_flashed_messages=get_flashed_messages)
 
 
 bodyTemplate = templateEnv.get_template("body.html")
+bodySimpleTemplate = templateEnv.get_template("body-simple.html")
 homeTemplate = templateEnv.get_template("home.html")
 threadTemplate = templateEnv.get_template("thread.html")
 createThreadTemplate = templateEnv.get_template("new-thread.html")
 createCommentTemplate = templateEnv.get_template("new-comment.html")
+fileManagerTemplate = templateEnv.get_template("file-manager.html")
+fileListTemplate = templateEnv.get_template("file-list.html")
 
 
 ###############################################################################
@@ -231,7 +244,7 @@ def threadGetHandler(tid):
     user = authManager.getUserData();
     removeUrl="/"
     if user:
-        removeUrl=url_for("deleteUserHandler", uid=user["id"])    
+        removeUrl=url_for("deleteUserHandler", uid=user["id"])
     threadRendered = threadTemplate.render(
             thread=thread,
             thread_attachments=thread_attachments,
@@ -261,8 +274,8 @@ def loginCallback():
                 if not query.getUser(dbSession, user["id"]):
                     print("User created: " + user["name"], file=sys.stderr)
                     dbSession.add(schema.User(
-                        id=user["id"], 
-                        name=user["name"], 
+                        id=user["id"],
+                        name=user["name"],
                         profile_picture=user["picture"]))
                     flash("Account Created")
         except:
@@ -288,17 +301,162 @@ def deleteUserHandler(uid):
             flash("Account Deletion Failed")
 
     return redirect(authManager.LOGOUT_ROUTE)
-        
-
 
 
 @authManager.logoutCallback
 def logoutCallback():
     """
-    This is invoked when a user logs in, before any other logic.
+    This is invoked when a user logs out, immediately before user context is destroyed.
     """
     user = authManager.getUserData()
     print("User signed out: " + user["name"], file=sys.stderr)
+
+
+@application.route('/file-manager', methods=['GET'])
+@authManager.enableAuthentication
+def fileManagerGetHandler():
+
+    user = authManager.getUserData();
+    if not user:
+        return 401;
+    id = user['id']
+
+    fileManagerRendered = fileManagerTemplate.render()
+    return bodyTemplate.render(
+        title="File Manager",
+        body=fileManagerRendered,
+        user=user,
+        location=request.url)
+
+
+@application.route('/file-delete', methods=['POST'])
+@authManager.requireAuthentication
+def fileListDeleteHander():
+    user = authManager.getUserData()
+    fid = int(request.form['file'])
+    id = user['id']
+
+    # Find the file in S3
+    try:
+        with dataSessionMgr.session_scope() as dbSession:
+            file1 = query.getFileById(dbSession,fid)
+            file1 = query.extractOutput(file1)
+    except Exception as e:
+        flash("An unexpected error occurred while finding the file in our cloud storage. "\
+                + "Please try again later.<br/><br/>", e);
+        return redirect(url_for("fileListGetHandler"))
+
+    # Delete the file from S3
+    key = file1['cloud_key']
+    try:
+        s3client.delete_object(Bucket=bucket_name,Key=key)
+    except Exception as e:
+        flash("An unexpected error occurred while removing the file from our cloud storage. "\
+                + "Please try again later.<br/><br/>", e);
+        return redirect(url_for("fileListGetHandler"))
+
+    # Delete the file by fileID in RDS
+    try:
+        with dataSessionMgr.session_scope() as dbSession:
+            file = query.getFileById(dbSession,fid)
+            if file:
+                dbSession.delete(file)
+    except Exception as e:
+        flash("An unexpected error occurred while removing this file from our database. "\
+                + "Please try again later.<br/><br/>", e);
+        return redirect(url_for("fileListGetHandler"))
+
+    return redirect(url_for("fileListGetHandler"))
+
+
+@application.route('/file-list', methods=['GET'])
+@authManager.requireAuthentication
+def fileListGetHandler():
+    user = authManager.getUserData()
+
+    id = user['id']
+    #Get the user's profile from the DB and zip it first
+    with dataSessionMgr.session_scope() as dbSession:
+        files = query.getFilesByUser(dbSession,id)
+        files = query.extractOutput(files)
+
+    if not files:
+        files = [];
+
+    fileManagerRendered = fileListTemplate.render(files=files)
+    return bodySimpleTemplate.render(
+        title="File Manager",
+        body=fileManagerRendered)
+
+
+@application.route('/file-list', methods=['POST'])
+@authManager.requireAuthentication
+def fileListPostHandler():
+    user = authManager.getUserData()
+
+    # Get the user session and file to upload
+    id = user['id']
+    file = request.files['file']
+
+    # If user does not select file, browser also submit a empty part without filename
+    if not file or file.filename.strip() == '':
+        flash('You must select a file in order to upload one.')
+        return redirect(request.url)
+
+    # Determine shortened file name (secure)
+    filename = secure_filename(file.filename.strip())
+    while (len(filename) > 50):
+        cutString = len(filename) % 50
+        filename = filename[cutString:len(filename)]
+
+    # Determine the S3 key
+    try:
+        myUuid = uuid.uuid4().hex
+        fn, fileExtension = os.path.splitext(filename)
+        key = id + "/" + myUuid + fileExtension.lower()
+
+        # If the file already exists, we need to warn and abort
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                checkFile = query.getFileByName(dbSession,id,filename)
+                checkFile = query.extractOutput(checkFile)
+        except Exception as e:
+            flash("Something happen", e);
+            return e
+
+        if checkFile is not None:
+            flash("That file already exists. Please delete it first and then re-upload. " \
+                    + "This will <b>remove</b> any attachments you have made to this file.")
+            return redirect(request.url)
+
+        # Since the file does not exist, we will upload it now
+        s3client.upload_fileobj(file, bucket_name, key, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
+        url = "https://s3-us-west-2.amazonaws.com/condensation-forum/" + key
+
+        storeToDB(id, url, key, filename)
+
+        return redirect(request.url)
+    except Exception as e:
+        flash("An unexpected error occurred while uploading your file. Things to try: "\
+                 + "<br/> - Rename the file to something shorter"\
+                 + "<br/> - Make sure the file size is under 1 megabyte"\
+                 + "<br/> - Make sure there are no special characters in the file name<br/><br/>", e);
+        return redirect(request.url)
+
+    # Redirect to end the POST handling the redirect can be to the same route or somewhere else
+    return redirect(request.url)
+
+
+def storeToDB(userID,url,key,filename):
+    """This method is used to store the data uploaded into DB"""
+    try:
+        with dataSessionMgr.session_scope() as dbSession:
+                 user = query.getUser(dbSession, userID)
+                 file = schema.File(url=url, cloud_key=key, name=filename)
+                 user.uploads.append(file)
+    except Exception as e:
+        flash("Something happen: ",e)
+        return e
 
 
 # Run Flask app now
