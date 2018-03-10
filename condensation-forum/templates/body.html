@@ -3,7 +3,7 @@
     <head>
         <title>{{ title }}</title>
         <link rel="stylesheet"
-              href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+              href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
               integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
               crossorigin="anonymous">
         <style>
@@ -68,7 +68,7 @@
                             <ul class="dropdown-menu">
                                 <li class="dropdown-header">{{ user.email }}</li>
                                 <li role="separator" class="divider"></li>
-								<li><a href="/file-manager">File Manager</li>
+								<li><a href="/file-manager">File Manager</a></li>
                                 <li><a href="/logout{% if location %}?redirect={{ location }}{% endif %}">Sign Out</a></li>
                                 <li><a href="/logout?redirect=https://www.google.com/accounts/Logout{% if location %}?continue=https://appengine.google.com/_ah/logout?continue={{ location }}{% endif %}">Sign Out of Google</a></li>
                                 <li><a href="/delete-user">Delete Account</a></li>
