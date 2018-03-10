@@ -65,7 +65,6 @@ s3client = boto3.client(
    aws_secret_access_key=config.get("secretKey")
 )
 
-
 #database connection
 dataSessionMgr = SessionManager(
         config.get("dbUser"),
@@ -84,6 +83,7 @@ templateEnv.globals.update(get_flashed_messages=get_flashed_messages)
 
 
 bodyTemplate = templateEnv.get_template("body.html")
+bodySimpleTemplate = templateEnv.get_template("body-simple.html")
 homeTemplate = templateEnv.get_template("home.html")
 threadTemplate = templateEnv.get_template("thread.html")
 createThreadTemplate = templateEnv.get_template("new-thread.html")
@@ -344,7 +344,7 @@ def fileListDeleteHander():
     except Exception as e:
         flash("An unexpected error occurred while finding the file in our cloud storage. "\
                 + "Please try again later.<br/><br/>", e);
-        return redirect(url_for("fileManagerGetHandler"))
+        return redirect(url_for("fileListGetHandler"))
 
     # Delete the file from S3
     key = file1['cloud_key']
@@ -353,7 +353,7 @@ def fileListDeleteHander():
     except Exception as e:
         flash("An unexpected error occurred while removing the file from our cloud storage. "\
                 + "Please try again later.<br/><br/>", e);
-        return redirect(url_for("fileManagerGetHandler"))
+        return redirect(url_for("fileListGetHandler"))
 
     # Delete the file by fileID in RDS
     try:
@@ -364,9 +364,9 @@ def fileListDeleteHander():
     except Exception as e:
         flash("An unexpected error occurred while removing this file from our database. "\
                 + "Please try again later.<br/><br/>", e);
-        return redirect(url_for("fileManagerGetHandler"))
+        return redirect(url_for("fileListGetHandler"))
 
-    return redirect(url_for("fileManagerGetHandler"))
+    return redirect(url_for("fileListGetHandler"))
 
 
 @application.route('/file-list', methods=['GET'])
@@ -384,12 +384,9 @@ def fileListGetHandler():
         files = [];
 
     fileManagerRendered = fileListTemplate.render(files=files)
-    return bodyTemplate.render(
+    return bodySimpleTemplate.render(
         title="File Manager",
-        body = fileManagerRendered,
-        user=user,
-        # Todo: Incorporate removeURL here
-        location=request.url)
+        body=fileManagerRendered)
 
 
 @application.route('/file-list', methods=['POST'])

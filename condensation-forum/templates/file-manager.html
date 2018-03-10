@@ -1,7 +1,17 @@
 
 <h2>File Manager</h2>
 
-<iframe src="/file-list"></iframe>
+<script>
+  function resizeIframe(obj) {
+    obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
+  }
+</script>
+
+<iframe
+    src="/file-list"
+    style="width: 100%; max-height: 300px; padding: 0; margin: 0; display: block; overflow-y: scroll; overflow-x: hidden;"
+    frameborder="0"
+    onload="resizeIframe(this);" ></iframe>
 
 <form id="taco" method="GET" action="/">
     <button type="submit" class="btn btn-primary">Back</button>
