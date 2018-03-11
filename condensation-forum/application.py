@@ -92,6 +92,7 @@ editThreadTemplate = templateEnv.get_template("edit-thread.html")
 editCommentTemplate = templateEnv.get_template("edit-comment.html")
 fileManagerTemplate = templateEnv.get_template("file-manager.html")
 fileListTemplate = templateEnv.get_template("file-list.html")
+sharedJavascript = templateEnv.get_template("shared.js")
 
 
 ###############################################################################
@@ -186,6 +187,10 @@ def newThreadHandler():
             body=rendered,
             user=user,
             location=url_for('indexGetHandler', _external=True))
+
+@application.route("/shared.js", methods=["GET"])
+def getSharedJs():
+    return sharedJavascript.render();
 
 @application.route("/edit-thread?tid=<int:tid>", methods=["GET", "POST"])
 @authManager.requireAuthentication
@@ -285,11 +290,17 @@ def newCommentHandler(tid):
     if form.validate_on_submit():
 #        try:
         with dataSessionMgr.session_scope() as dbSession:
-            print(user, file=sys.stderr)
+
+            # Collect a list of all file entities
+            fileEntries = json.loads(request.form["fileIds"])
+            print (fileEntries, file=sys.stderr)
+            files = []
+            for fileEntry in fileEntries:
+                files.append(query.getFileById(dbSession, fileEntry['id']))
+
             user = query.getUser(dbSession, user["id"])
-            print(user, file=sys.stderr)
             thread = query.getThreadById(dbSession, tid)
-            thread.replies.append(schema.Comment(user=user, body=form.body.data))
+            thread.replies.append(schema.Comment(user=user, body=form.body.data, attachments=files))
 
         flash("Comment Created")
         #redirect to the created thread view
@@ -298,7 +309,8 @@ def newCommentHandler(tid):
 #            flash("Comment Creation Failed")
 #            return redirect(url_for("indexGetHandler"))
 
-    rendered = editCommentTemplate.render(form=form)
+    fileList = [];
+    rendered = editCommentTemplate.render(form=form, fileListAsString=json.dumps(fileList))
     user = authManager.getUserData()
 
     return bodyTemplate.render(
@@ -328,11 +340,20 @@ def editCommentHandler(cid):
     if form.validate_on_submit():
         try:
             with dataSessionMgr.session_scope() as dbSession:
+
+                # Collect a list of all file entities
+                fileEntries = json.loads(request.form["fileIds"])
+                print (fileEntries, file=sys.stderr)
+                files = []
+                for fileEntry in fileEntries:
+                    files.append(query.getFileById(dbSession, fileEntry['id']))
+
                 comment = query.getCommentById(dbSession, cid)
                 tid = comment.thread_id
                 if user["id"] != comment.user_id:
                     abort(403)
                 comment.body = form.body.data
+                comment.attachments = files
             flash("Comment Updated")
             #redirect to the created thread view
             return redirect(url_for("threadGetHandler", tid=tid))
@@ -341,12 +362,18 @@ def editCommentHandler(cid):
             return redirect(url_for("indexGetHandler"))
 
     #populate with old data from forms
+    fileList = [];
     with dataSessionMgr.session_scope() as dbSession:
          comment = query.getCommentById(dbSession, cid)
          form.body.data = comment.body
+         for file in comment.attachments:
+            fileList.append({
+                'id': file.id,
+                'name': file.name
+            })
 
     #error handling is done in the html forms
-    rendered = editCommentTemplate.render(form=form, edit = True)
+    rendered = editCommentTemplate.render(form=form, edit=True, fileListAsString=json.dumps(fileList))
     return bodyTemplate.render(
             title="Edit Comment",
             body=rendered,
