@@ -468,7 +468,7 @@ def loginCallback():
                         id=user["id"],
                         name=user["name"],
                         profile_picture=user["picture"]))
-                    flash("Account Created")
+                    flash("Your Google account has been linked. Thank you!")
         except:
             flash("Account Creation Failed")
             #if this fails logout and redirect home
