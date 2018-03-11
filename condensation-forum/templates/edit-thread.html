@@ -1,19 +1,26 @@
+
+<script src="/shared.js" type="text/javascript"></script>
+<script>
+    //When everything loads, populate the attachment list
+    document.addEventListener("DOMContentLoaded", loadAttachmentList, false);
+</script>
+
 <div class="panel panel-default">
     <div class="panel-body">
         <div class="row">
             <div class="col-md-12">
                 <div class="container-fluid">
                     <div class="row">
-                        <div class="col-md-12"> 
+                        <div class="col-md-12">
                             {%if edit%}
-                            <h3>Edit Thread</h3> 
+                            <h3>Edit Thread</h3>
                             {%else%}
-                            <h3>Create Thread</h3> 
+                            <h3>Create Thread</h3>
                             {%endif%}
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-12"> 
+                        <div class="col-md-12">
                             <form action="" method="post">
 
                                 {{ form.hidden_tag() }}
@@ -32,14 +39,28 @@
                                     {% endfor %}
                                 </div>
                                 <div class="form-group">
+                                    <input type="text" value='{{ fileListAsString }}' id="fileIds" name="fileIds" style="display: none;" >
+                                    <label>Attached Files (click to remove)</label><br/>
+                                    <div id="fileList" class="list-group" style="width: 50%; min-width: 300px;">
+                                        <i>Loading...</i>
+                                    </div>
+                                </div>
+                                <div class="form-group">
                                     {{ form.submit(class_="form-control") }}
                                 </div>
                             </form>
                         </div>
+                    </div>
+                    <div class="row" id="attach-frame" style="display: none;">
+                        <iframe
+                            src="/file-list"
+                            id="attach-iframe"
+                            style="width: 100%; max-height: 300px; padding: 0; margin: 0; display: block; overflow-y: scroll; overflow-x: hidden;"
+                            frameborder="0"
+                            onload="resizeIframe(this);" ></iframe>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-

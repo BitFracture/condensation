@@ -5,34 +5,40 @@
             <div class="col-md-12">
                 <div class="container-fluid">
                     <div class="row">
-                        <div class="col-md-12"> 
-                            <h3>{{thread["heading"]}}</h3> 
+                        <div class="col-md-12">
+                            <h3>{{thread["heading"]}}</h3>
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-12"> 
-                            <h4>{{op}}</h4> 
+                        <div class="col-md-1">
+                            <img src="{{op["profile_picture"]}}" class="img-responsive" style="width: 64px; border-radius: 32px;" alt="{{op["name"]}}-profile-picture">
+                        </div>
+                        <div class="col-md-10">
+                            <div class="containter-fluid">
+                                <div class="row">
+                                    <h4>{{op["name"]}}</h4>
+                                </div>
+                                <div class="row">
+                                    <em>{{thread["time_modified"].strftime("%m/%d/%y %H:%M")}}</em>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-12"> 
-                            <em>{{thread["time_modified"].strftime("%m/%d/%y %H:%M")}}</em> 
-                        </div>
-                    </div>
+                    <hr>
                     <div class="row well">
-                        <p class="text-md-left">{{thread["body"]}}</p> 
+                        <p class="text-md-left">{{thread["body"]}}</p>
                     </div>
                     {% if thread_attachments%}
                     <hr>
                     <div class="row">
-                        <div class="col-md-12"> 
+                        <div class="col-md-12">
                             <b>Attachments</b>
                         </div>
                     </div>
                     <div class="row" >
                         <ul class="list-group">
                             {%for attachment in thread_attachments%}
-                            <div class="col-md-12"> 
+                            <div class="col-md-12">
                                 <a href="{{attachment["url"]}}" class="list-group-item">
                                     {{attachment["name"]}}
                                 </a>
@@ -44,20 +50,20 @@
                     {% if op_permission %}
                     <hr>
                     <div class="row">
-                        <div class="col-md-2">    
-                            <button type="button" class="btn btn-info" onclick='location.href="{{url_for("editThreadHandler", tid=thread["id"])}}";'>Edit Thread</button>  
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-info" onclick='location.href="{{url_for("editThreadHandler", tid=thread["id"])}}";'>Edit Thread</button>
                         </div>
                         <div class="col-md-8">
                         </div>
-                        <div class="col-md-2">    
-                            <button type="button" class="btn btn-danger" onclick='location.href="{{url_for("deleteThreadHandler", tid=thread["id"])}}";'>Delete Thread</button>  
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-danger" onclick='location.href="{{url_for("deleteThreadHandler", tid=thread["id"])}}";'>Delete Thread</button>
                         </div>
                     </div>
                     {%endif%}
                     <hr>
                     <div class="row">
-                        <div class="col-md-12">    
-                            <button type="button" class="btn btn-primary" onclick="location.href='{{replyUrl}}';">Reply</button>  
+                        <div class="col-md-12">
+                            <button type="button" class="btn btn-primary" onclick="location.href='{{replyUrl}}';">Reply</button>
                         </div>
                     </div>
                 </div>
@@ -74,29 +80,35 @@
             <div class="col-md-12">
                 <div class="container-fluid">
                     <div class="row">
-                        <div class="col-md-12"> 
-                            <h4>{{user}}</h4> 
+                        <div class="col-md-1">
+                            <img src="{{user["profile_picture"]}}" class="img-responsive"  style="width: 64px; border-radius: 32px;" alt="{{user["name"]}}-profile-picture">
+                        </div>
+                        <div class="col-md-10">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <h4>{{user["name"]}}</h4>
+                                </div>
+                                <div class="row">
+                                    <em>{{comment["time_modified"].strftime("%m/%d/%y %H:%M")}}</em>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-12"> 
-                            <em>{{comment["time_modified"].strftime("%m/%d/%y %H:%M")}}</em> 
-                        </div>
-                    </div>
+                    <hr>
                     <div class="row well">
-                        <p class="text-md-left">{{comment["body"]}}</p> 
+                        <p class="text-md-left">{{comment["body"]}}</p>
                     </div>
                     {% if attachments%}
                     <hr>
                     <div class="row">
-                        <div class="col-md-12"> 
+                        <div class="col-md-12">
                             <b>Attachments</b>
                         </div>
                     </div>
                     <div class="row" >
                         <ul class="list-group">
                             {%for attachment in attachments%}
-                            <div class="col-md-12"> 
+                            <div class="col-md-12">
                                 <a href="{{attachment["url"]}}" class="list-group-item">
                                     {{attachment["name"]}}
                                 </a>
@@ -108,13 +120,13 @@
                     {% if permission %}
                     <hr>
                     <div class="row">
-                        <div class="col-md-2">    
-                            <button type="button" class="btn btn-info" onclick='location.href="{{url_for("editCommentHandler", cid=comment["id"])}}";'>Edit Comment</button>  
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-info" onclick='location.href="{{url_for("editCommentHandler", cid=comment["id"])}}";'>Edit Comment</button>
                         </div>
                         <div class="col-md-8">
                         </div>
-                        <div class="col-md-2">    
-                            <button type="button" class="btn btn-danger" onclick='location.href="{{url_for("deleteCommentHandler", cid=comment["id"])}}";'>Delete Comment</button>  
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-danger" onclick='location.href="{{url_for("deleteCommentHandler", cid=comment["id"])}}";'>Delete Comment</button>
                         </div>
                     </div>
                     {%endif%}

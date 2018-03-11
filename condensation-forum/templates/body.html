@@ -2,15 +2,17 @@
 <html>
     <head>
         <title>{{ title }}</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
         <link rel="stylesheet"
               href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
               integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
               crossorigin="anonymous">
         <style>
-*
-{
-    border: 0;
-}
+        *
+        {
+            border: 0;
+        }
         body
         {
             background-color: #222222 !important;
@@ -38,8 +40,6 @@
             resize:vertical
         }
         </style>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
     </head>
     <body>
         <nav class="navbar navbar-default">
@@ -68,9 +68,10 @@
                             <ul class="dropdown-menu">
                                 <li class="dropdown-header">{{ user.email }}</li>
                                 <li role="separator" class="divider"></li>
+								<li><a href="/file-manager">File Manager</a></li>
                                 <li><a href="/logout{% if location %}?redirect={{ location }}{% endif %}">Sign Out</a></li>
                                 <li><a href="/logout?redirect=https://www.google.com/accounts/Logout{% if location %}?continue=https://appengine.google.com/_ah/logout?continue={{ location }}{% endif %}">Sign Out of Google</a></li>
-                                <li><a href="{{removeUrl}}">Delete Account</a></li>
+                                <li><a href="/delete-user">Delete Account</a></li>
                             </ul>
                         </li>
                         {% else %}
@@ -82,17 +83,19 @@
                     </div><!-- /.navbar-collapse -->
             </div><!-- /.container-fluid -->
         </nav>
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <div class="container">
-            {% for message in messages %}
-            <div class="well">{{message}}</div>
-            {% endfor %}
-        </div>
-        {%endif%}
-        {% endwith %}
 
         <div class="container">
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div>
+                {% for message in messages %}
+                <div class="well" style="background-color: #fffdc7;">{{message}}</div>
+                {% endfor %}
+            </div>
+            {%endif%}
+            {% endwith %}
+
             {{ body }}
         </div>
     </body>
