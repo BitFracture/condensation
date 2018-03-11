@@ -3,7 +3,28 @@
         document.getElementById("browse-box").style.display = "none";
         document.getElementById("load-box").style.display = "block";
     }
+    document.addEventListener("DOMContentLoaded", function () {
+
+        var enabled = !window.parent.disableAttachments;
+
+        //Enable/disble optional columns
+        var optionals = document.getElementsByClassName("optional-column");
+        
+        for (var optionalId in optionals) {
+            if (!!optionals[optionalId] && !!optionals[optionalId].style && !!optionals[optionalId].style.display)
+                optionals[optionalId].style.display = enabled ? "block" : "none";
+        }
+    }, false);
+
 </script>
+<style>
+    .col-md-3 {
+        overflow: hidden;
+    }
+    .col-md-2 {
+        overflow: hidden;
+    }
+</style>
 <div id="browse-box">
     <div class="row">
         <div class="col-md-12">
@@ -12,22 +33,19 @@
                     <div class="panel-body">
                         <div class="row">
                             <div class="col-md-3"><b>File Name</b></div>
-                            <div class="col-md-3"><b>URL</b></div>
                             <div class="col-md-2"><b>Time Created</b></div>
     						<div class="col-md-2"><b>Remove</b></div>
+    						<div class="col-md-2 optional-column" style="display: none;"><b>Attach</b></div>
                         </div>
                     </div>
                     <!--File information retrieval-->
                     {% for file in files%}
 
                     <div class="userProfile">
-                        <a href="{{ turl }}">
-                            <div class="row">
+                        <!--<a href="{{ turl }}">-->
+                            <div class="row" style="min-height: 4em;">
                                 <div class="col-md-3">
-                                    {{ file["name"] }}
-                                </div>
-                                <div class="col-md-3">
-                                    {{ file["url"] }}
+                                    <a href='{{ file["url"] }}' target="_blank">{{ file["name"] }}</a>
                                 </div>
                                 <div class="col-md-2">
                                     {{ file["time_created"].strftime("%H:%M %D")}}
@@ -38,8 +56,14 @@
     									<button type="submit" class="btn btn-primary" onclick="activateWaitScreen();" >Delete</button>
     								</form>
                                 </div>
+    							<div class="col-md-2 optional-column" style="display: none;">
+                                    <button type="submit"
+                                            class="btn btn-primary"
+                                            style="background-color: green;"
+                                            onclick="window.parent.selectAttachment({{ file['id'] }}, '{{ file["name"] }}');" >Attach</button>
+                                </div>
                             </div>
-                        </a>
+                        <!--</a>-->
                     </div>
 
                     {% else %}

@@ -92,6 +92,7 @@ editThreadTemplate = templateEnv.get_template("edit-thread.html")
 editCommentTemplate = templateEnv.get_template("edit-comment.html")
 fileManagerTemplate = templateEnv.get_template("file-manager.html")
 fileListTemplate = templateEnv.get_template("file-list.html")
+sharedJavascript = templateEnv.get_template("shared.js")
 
 
 ###############################################################################
@@ -113,7 +114,7 @@ def indexGetHandler():
 
         user = authManager.getUserData()
         if not user:
-            flash("Welcome, please login or create an account.")
+            flash("Welcome, please <a href='/login'>log in or create an account</a>.")
 
 
         threads = query.getThreadsByCommentTime(dbSession)
@@ -146,37 +147,50 @@ def newThreadHandler():
     form = CreateThreadForm()
 
     user = authManager.getUserData()
-    if not user:
-        abort(403)
     if form.validate_on_submit():
         tid = None
-        try:
-            with dataSessionMgr.session_scope() as dbSession:
-                user = query.getUser(dbSession, user["id"])
-                thread = schema.Thread(heading=form.heading.data, body=form.body.data)
-                user.threads.append(thread)
-                #commits current transactions so we can grab the generated id
-                dbSession.flush()
-                tid = thread.id
-            flash("Thread Created")
-            #redirect to the created thread view
-            return redirect(url_for("threadGetHandler", tid=tid))
-        except:
-            flash("Thread Creation Failed")
-            return redirect(url_for("indexGetHandler"))
+        #try:
+        with dataSessionMgr.session_scope() as dbSession:
+
+            # Collect a list of all file entities
+            fileEntries = json.loads(request.form["fileIds"])
+            print (fileEntries, file=sys.stderr)
+            files = []
+            for fileEntry in fileEntries:
+                files.append(query.getFileById(dbSession, fileEntry['id']))
+
+            user = query.getUser(dbSession, user["id"])
+            thread = schema.Thread(user=user, heading=form.heading.data, body=form.body.data, attachments=files)
+            #commits current transactions so we can grab the generated id
+            dbSession.flush()
+            tid = thread.id
+        flash("Thread Created")
+        #redirect to the created thread view
+        return redirect(url_for("threadGetHandler", tid=tid))
+        #except:
+            #flash("Thread Creation Failed")
+            #return redirect(url_for("indexGetHandler"))
 
     #error handling is done in the html forms
     user = authManager.getUserData()
     removeUrl="/"
     if user:
         removeUrl=url_for("deleteUserHandler", uid=user["id"])
-    rendered = editThreadTemplate.render(form=form)
+
+    #File attachment list
+    fileList = [];
+
+    rendered = editThreadTemplate.render(form=form, fileListAsString=json.dumps(fileList))
 
     return bodyTemplate.render(
             title="Create Thread",
             body=rendered,
             user=user,
             location=url_for('indexGetHandler', _external=True))
+
+@application.route("/shared.js", methods=["GET"])
+def getSharedJs():
+    return sharedJavascript.render();
 
 @application.route("/edit-thread?tid=<int:tid>", methods=["GET", "POST"])
 @authManager.requireAuthentication
@@ -198,11 +212,20 @@ def editThreadHandler(tid):
     if form.validate_on_submit():
         try:
             with dataSessionMgr.session_scope() as dbSession:
+
+                # Collect a list of all file entities
+                fileEntries = json.loads(request.form["fileIds"])
+                print (fileEntries, file=sys.stderr)
+                files = []
+                for fileEntry in fileEntries:
+                    files.append(query.getFileById(dbSession, fileEntry['id']))
+
                 thread = query.getThreadById(dbSession, tid)
                 if user["id"] != thread.user_id:
                     abort(403)
                 thread.heading = form.heading.data
                 thread.body = form.body.data
+                thread.attachments = files
             flash("Thread Updated")
             #redirect to the created thread view
             return redirect(url_for("threadGetHandler", tid=tid))
@@ -211,13 +234,19 @@ def editThreadHandler(tid):
             return redirect(url_for("indexGetHandler"))
 
     #populate with old data from forms
+    fileList = [];
     with dataSessionMgr.session_scope() as dbSession:
          thread = query.getThreadById(dbSession, tid)
          form.heading.data = thread.heading
          form.body.data = thread.body
+         for file in thread.attachments:
+            fileList.append({
+                'id': file.id,
+                'name': file.name
+            })
 
     #error handling is done in the html forms
-    rendered = editThreadTemplate.render(form=form, edit = True)
+    rendered = editThreadTemplate.render(form=form, edit = True, fileListAsString=json.dumps(fileList))
     return bodyTemplate.render(
             title="Edit Thread",
             body=rendered,
@@ -261,11 +290,17 @@ def newCommentHandler(tid):
     if form.validate_on_submit():
 #        try:
         with dataSessionMgr.session_scope() as dbSession:
-            print(user, file=sys.stderr)
+
+            # Collect a list of all file entities
+            fileEntries = json.loads(request.form["fileIds"])
+            print (fileEntries, file=sys.stderr)
+            files = []
+            for fileEntry in fileEntries:
+                files.append(query.getFileById(dbSession, fileEntry['id']))
+
             user = query.getUser(dbSession, user["id"])
-            print(user, file=sys.stderr)
             thread = query.getThreadById(dbSession, tid)
-            thread.replies.append(schema.Comment(user=user, body=form.body.data))
+            thread.replies.append(schema.Comment(user=user, body=form.body.data, attachments=files))
 
         flash("Comment Created")
         #redirect to the created thread view
@@ -274,7 +309,8 @@ def newCommentHandler(tid):
 #            flash("Comment Creation Failed")
 #            return redirect(url_for("indexGetHandler"))
 
-    rendered = editCommentTemplate.render(form=form)
+    fileList = [];
+    rendered = editCommentTemplate.render(form=form, fileListAsString=json.dumps(fileList))
     user = authManager.getUserData()
 
     return bodyTemplate.render(
@@ -304,11 +340,20 @@ def editCommentHandler(cid):
     if form.validate_on_submit():
         try:
             with dataSessionMgr.session_scope() as dbSession:
+
+                # Collect a list of all file entities
+                fileEntries = json.loads(request.form["fileIds"])
+                print (fileEntries, file=sys.stderr)
+                files = []
+                for fileEntry in fileEntries:
+                    files.append(query.getFileById(dbSession, fileEntry['id']))
+
                 comment = query.getCommentById(dbSession, cid)
                 tid = comment.thread_id
                 if user["id"] != comment.user_id:
                     abort(403)
                 comment.body = form.body.data
+                comment.attachments = files
             flash("Comment Updated")
             #redirect to the created thread view
             return redirect(url_for("threadGetHandler", tid=tid))
@@ -317,12 +362,18 @@ def editCommentHandler(cid):
             return redirect(url_for("indexGetHandler"))
 
     #populate with old data from forms
+    fileList = [];
     with dataSessionMgr.session_scope() as dbSession:
          comment = query.getCommentById(dbSession, cid)
          form.body.data = comment.body
+         for file in comment.attachments:
+            fileList.append({
+                'id': file.id,
+                'name': file.name
+            })
 
     #error handling is done in the html forms
-    rendered = editCommentTemplate.render(form=form, edit = True)
+    rendered = editCommentTemplate.render(form=form, edit=True, fileListAsString=json.dumps(fileList))
     return bodyTemplate.render(
             title="Edit Comment",
             body=rendered,
@@ -417,7 +468,7 @@ def loginCallback():
                         id=user["id"],
                         name=user["name"],
                         profile_picture=user["picture"]))
-                    flash("Account Created")
+                    flash("Your Google account has been linked. Thank you!")
         except:
             flash("Account Creation Failed")
             #if this fails logout and redirect home
