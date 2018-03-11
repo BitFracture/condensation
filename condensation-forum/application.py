@@ -224,7 +224,7 @@ def editThreadHandler(tid):
 
                 thread.attachments = files
                 thread.heading = escape(form.heading.data)
-                thread.body = escape(form.body.data
+                thread.body = escape(form.body.data)
             flash("Your thread was updated successfully.")
             #redirect to the created thread view
             return redirect(url_for("threadGetHandler", tid=tid))
@@ -412,6 +412,11 @@ def threadGetHandler(tid):
     thread = None
     with dataSessionMgr.session_scope() as dbSession:
         thread = query.getThreadById(dbSession, tid)
+
+        if thread is None:
+            flash("The thread you selected does not exist.")
+            return redirect(url_for("indexGetHandler"));
+
         thread_attachments = query.extractOutput(thread.attachments)
 
         user = authManager.getUserData()
