@@ -5,11 +5,12 @@
   function resizeIframe(obj) {
     obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
   }
+  var disableAttachments = true;
 </script>
 
 <iframe
     src="/file-list"
-    style="width: 100%; max-height: 300px; padding: 0; margin: 0; display: block; overflow-y: scroll; overflow-x: hidden;"
+    style="width: 100%; padding: 0; margin: 0; display: block; overflow-y: scroll; overflow-x: hidden;"
     frameborder="0"
     onload="resizeIframe(this);" ></iframe>
 
