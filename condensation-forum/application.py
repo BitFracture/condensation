@@ -2,7 +2,7 @@
 An AWS Python3+Flask web app.
 """
 
-from flask import Flask, redirect, url_for, request, session, flash, get_flashed_messages
+from flask import Flask, redirect, url_for, request, session, flash, get_flashed_messages, escape
 from flask_oauthlib.client import OAuth
 import boto3
 import jinja2
@@ -145,7 +145,7 @@ def newThreadHandler():
         try:
             with dataSessionMgr.session_scope() as dbSession:
                 user = query.getUser(dbSession, user["id"])
-                thread = schema.Thread(heading=form.heading.data, body=form.body.data)
+                thread = schema.Thread(heading=escape(form.heading.data), body=escape(form.body.data))
                 user.threads.append(thread)
                 #commits current transactions so we can grab the generated id
                 dbSession.flush()
@@ -193,8 +193,8 @@ def editThreadHandler(tid):
                 thread = query.getThreadById(dbSession, tid)
                 if user["id"] != thread.user_id:
                     abort(403)
-                thread.heading = form.heading.data
-                thread.body = form.body.data
+                thread.heading = escape(form.heading.data)
+                thread.body = escape(form.body.data)
             flash("Thread Updated")
             #redirect to the created thread view
             return redirect(url_for("threadGetHandler", tid=tid))
@@ -254,7 +254,7 @@ def newCommentHandler(tid):
             with dataSessionMgr.session_scope() as dbSession:
                 user = query.getUser(dbSession, user["id"])
                 thread = query.getThreadById(dbSession, tid)
-                thread.replies.append(schema.Comment(user=user, body=form.body.data))
+                thread.replies.append(schema.Comment(user=user, body=escape(form.body.data)))
 
             flash("Comment Created")
             #redirect to the created thread view
@@ -296,7 +296,7 @@ def editCommentHandler(cid):
                 tid = comment.thread_id
                 if user["id"] != comment.user_id:
                     abort(403)
-                comment.body = form.body.data
+                comment.body = escape(form.body.data)
             flash("Comment Updated")
             #redirect to the created thread view
             return redirect(url_for("threadGetHandler", tid=tid))
@@ -399,20 +399,20 @@ def loginCallback():
     """
     user = authManager.getUserData()
     if user:
-        try:
-            with dataSessionMgr.session_scope() as dbSession:
-                #add a new user if not in the database
-                if not query.getUser(dbSession, user["id"]):
-                    print("User created: " + user["name"], file=sys.stderr)
-                    dbSession.add(schema.User(
-                        id=user["id"], 
-                        name=user["name"], 
-                        profile_picture=user["picture"]))
-                    flash("Account Created")
-        except:
-            flash("Account Creation Failed")
-            #if this fails logout and redirect home
-            return redirect(authManager.LOGOUT_ROUTE)
+        with dataSessionMgr.session_scope() as dbSession:
+            #add a new user if not in the database
+            if not query.getUser(dbSession, user["id"]):
+                print("User created: " + user["name"], file=sys.stderr)
+                dbSession.add(schema.User(
+                    id=user["id"], 
+                    name=user["name"], 
+                    profile_picture=user["picture"]))
+                flash("Account Created")
+        #try:
+        #except:
+        #    flash("Account Creation Failed")
+        #    #if this fails logout and redirect home
+        #    return redirect(authManager.LOGOUT_ROUTE)
 
 
 @application.route("/delete-user?id=<int:uid>", methods=["GET"])
@@ -422,14 +422,14 @@ def deleteUserHandler(uid):
     user = authManager.getUserData()
     print("delete", uid, user["id"], file = sys.stderr)
     if user and int(user["id"]) == uid:
-        try:
-            with dataSessionMgr.session_scope() as dbSession:
-                account = query.getUser(dbSession, user["id"])
-                if account:
-                    dbSession.delete(account)
-                    flash("Account Deleted")
-        except:
-            flash("Account Deletion Failed")
+        with dataSessionMgr.session_scope() as dbSession:
+            account = query.getUser(dbSession, user["id"])
+            if account:
+                dbSession.delete(account)
+                flash("Account Deleted")
+        #try:
+        #except:
+        #    flash("Account Deletion Failed")
 
     return redirect(authManager.LOGOUT_ROUTE)
         
