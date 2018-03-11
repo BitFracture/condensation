@@ -2,7 +2,7 @@
 An AWS Python3+Flask web app.
 """
 
-from flask import Flask, redirect, url_for, request, session, flash, get_flashed_messages, render_template
+from flask import Flask, redirect, url_for, request, session, flash, get_flashed_messages, render_template, escape
 from flask_oauthlib.client import OAuth
 import boto3,botocore
 import jinja2
@@ -123,8 +123,6 @@ def indexGetHandler():
         user = authManager.getUserData()
         threads = query.extractOutput(threads)
 
-
-
     homeRendered = homeTemplate.render(
             threads=threads,
             urls=urls,
@@ -149,33 +147,33 @@ def newThreadHandler():
     user = authManager.getUserData()
     if form.validate_on_submit():
         tid = None
-        #try:
-        with dataSessionMgr.session_scope() as dbSession:
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
 
-            # Collect a list of all file entities
-            fileEntries = json.loads(request.form["fileIds"])
-            print (fileEntries, file=sys.stderr)
-            files = []
-            for fileEntry in fileEntries:
-                files.append(query.getFileById(dbSession, fileEntry['id']))
+                # Collect a list of all file entities
+                fileEntries = json.loads(request.form["fileIds"])
+                files = []
+                for fileEntry in fileEntries:
+                    files.append(query.getFileById(dbSession, fileEntry['id']))
 
-            user = query.getUser(dbSession, user["id"])
-            thread = schema.Thread(user=user, heading=form.heading.data, body=form.body.data, attachments=files)
-            #commits current transactions so we can grab the generated id
-            dbSession.flush()
-            tid = thread.id
-        flash("Thread Created")
-        #redirect to the created thread view
-        return redirect(url_for("threadGetHandler", tid=tid))
-        #except:
-            #flash("Thread Creation Failed")
-            #return redirect(url_for("indexGetHandler"))
+                user = query.getUser(dbSession, user["id"])
+                thread = schema.Thread(
+                    user=user,
+                    heading=escape(form.heading.data),
+                    body=escape(form.body.data),
+                    attachments=files)
+                #commits current transactions so we can grab the generated id
+                dbSession.flush()
+                tid = thread.id
+            flash("Your thread was created successfully.")
+            #redirect to the created thread view
+            return redirect(url_for("threadGetHandler", tid=tid))
+        except:
+            flash("An unexpected error occurred while creating a thread. Please try again later.")
+            return redirect(url_for("indexGetHandler"))
 
     #error handling is done in the html forms
     user = authManager.getUserData()
-    removeUrl="/"
-    if user:
-        removeUrl=url_for("deleteUserHandler", uid=user["id"])
 
     #File attachment list
     fileList = [];
@@ -223,28 +221,31 @@ def editThreadHandler(tid):
                 thread = query.getThreadById(dbSession, tid)
                 if user["id"] != thread.user_id:
                     abort(403)
-                thread.heading = form.heading.data
-                thread.body = form.body.data
+
                 thread.attachments = files
-            flash("Thread Updated")
+                thread.heading = escape(form.heading.data)
+                thread.body = escape(form.body.data
+            flash("Your thread was updated successfully.")
             #redirect to the created thread view
             return redirect(url_for("threadGetHandler", tid=tid))
         except:
-            flash("Thread Update Failed")
+            flash("An unexpected error occurred while updating a thread. Please try again later.")
             return redirect(url_for("indexGetHandler"))
 
     #populate with old data from forms
     fileList = [];
-    with dataSessionMgr.session_scope() as dbSession:
-         thread = query.getThreadById(dbSession, tid)
-         form.heading.data = thread.heading
-         form.body.data = thread.body
-         for file in thread.attachments:
-            fileList.append({
-                'id': file.id,
-                'name': file.name
-            })
-
+    try:
+        with dataSessionMgr.session_scope() as dbSession:
+             thread = query.getThreadById(dbSession, tid)
+             form.heading.data = thread.heading
+             form.body.data = thread.body
+             for file in thread.attachments:
+                fileList.append({
+                    'id': file.id,
+                    'name': file.name
+                })
+    except:
+        flash("loading failed")
     #error handling is done in the html forms
     rendered = editThreadTemplate.render(form=form, edit = True, fileListAsString=json.dumps(fileList))
     return bodyTemplate.render(
@@ -270,9 +271,9 @@ def deleteThreadHandler(tid):
             if user["id"] != thread.user_id:
                 abort(403)
             dbSession.delete(thread)
-        flash("Thread Deleted")
+        flash("Your thread was deleted successfully.")
     except:
-        flash("Thread Deletion Failed")
+        flash("An unexpected error occurred while deleting a thread. Please try again later.")
     return redirect(url_for("indexGetHandler"))
 
 @application.route("/new-comment?<int:tid>", methods=["GET", "POST"])
@@ -288,26 +289,25 @@ def newCommentHandler(tid):
     if not user:
         abort(403)
     if form.validate_on_submit():
-#        try:
-        with dataSessionMgr.session_scope() as dbSession:
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
 
-            # Collect a list of all file entities
-            fileEntries = json.loads(request.form["fileIds"])
-            print (fileEntries, file=sys.stderr)
-            files = []
-            for fileEntry in fileEntries:
-                files.append(query.getFileById(dbSession, fileEntry['id']))
+                # Collect a list of all file entities
+                fileEntries = json.loads(request.form["fileIds"])
+                files = []
+                for fileEntry in fileEntries:
+                    files.append(query.getFileById(dbSession, fileEntry['id']))
 
-            user = query.getUser(dbSession, user["id"])
-            thread = query.getThreadById(dbSession, tid)
-            thread.replies.append(schema.Comment(user=user, body=form.body.data, attachments=files))
+                user = query.getUser(dbSession, user["id"])
+                thread = query.getThreadById(dbSession, tid)
+                thread.replies.append(schema.Comment(user=user, body=escape(form.body.data), attachments=files))
 
-        flash("Comment Created")
-        #redirect to the created thread view
-        return redirect(url_for("threadGetHandler", tid=tid))
-#        except:
-#            flash("Comment Creation Failed")
-#            return redirect(url_for("indexGetHandler"))
+            flash("Your comment was created successfully.")
+            #redirect to the created thread view
+            return redirect(url_for("threadGetHandler", tid=tid))
+        except:
+            flash("An unexpected error occurred while creating a comment. Please try again later.")
+            return redirect(url_for("indexGetHandler"))
 
     fileList = [];
     rendered = editCommentTemplate.render(form=form, fileListAsString=json.dumps(fileList))
@@ -324,7 +324,6 @@ def newCommentHandler(tid):
 def editCommentHandler(cid):
     """Renders an existing comment to be modified """
 
-    print("hello world comment edit", file=sys.stderr)
     #do not allow unauthenticated users to submit
     form = CreateCommentForm()
 
@@ -343,7 +342,6 @@ def editCommentHandler(cid):
 
                 # Collect a list of all file entities
                 fileEntries = json.loads(request.form["fileIds"])
-                print (fileEntries, file=sys.stderr)
                 files = []
                 for fileEntry in fileEntries:
                     files.append(query.getFileById(dbSession, fileEntry['id']))
@@ -352,25 +350,29 @@ def editCommentHandler(cid):
                 tid = comment.thread_id
                 if user["id"] != comment.user_id:
                     abort(403)
-                comment.body = form.body.data
+
+                comment.body = escape(form.body.data)
                 comment.attachments = files
-            flash("Comment Updated")
+            flash("Your comment was updated successfully.")
             #redirect to the created thread view
             return redirect(url_for("threadGetHandler", tid=tid))
         except:
-            flash("Comment Update Failed")
+            flash("An unexpected error occurred while updating a comment. Please try again later.")
             return redirect(url_for("indexGetHandler"))
 
     #populate with old data from forms
     fileList = [];
-    with dataSessionMgr.session_scope() as dbSession:
-         comment = query.getCommentById(dbSession, cid)
-         form.body.data = comment.body
-         for file in comment.attachments:
-            fileList.append({
-                'id': file.id,
-                'name': file.name
-            })
+    try:
+        with dataSessionMgr.session_scope() as dbSession:
+            comment = query.getCommentById(dbSession, cid)
+            form.body.data = comment.body
+            for file in comment.attachments:
+               fileList.append({
+                   'id': file.id,
+                   'name': file.name
+               })
+    except:
+        flash("Loading comment data failed, please try again.")
 
     #error handling is done in the html forms
     rendered = editCommentTemplate.render(form=form, edit=True, fileListAsString=json.dumps(fileList))
@@ -397,9 +399,9 @@ def deleteCommentHandler(cid):
             if user["id"] != comment.user_id:
                 abort(403)
             dbSession.delete(comment)
-        flash("Comment Deleted")
+        flash("Your comment was deleted successfully.")
     except:
-        flash("Comment Deletion Failed")
+        flash("An unexpected error occurred while deleting a comment. Please try again later.")
     return redirect(url_for("indexGetHandler"))
 
 @application.route("/thread/<int:tid>)", methods=["GET"])
@@ -463,33 +465,30 @@ def loginCallback():
             with dataSessionMgr.session_scope() as dbSession:
                 #add a new user if not in the database
                 if not query.getUser(dbSession, user["id"]):
-                    print("User created: " + user["name"], file=sys.stderr)
                     dbSession.add(schema.User(
                         id=user["id"],
                         name=user["name"],
                         profile_picture=user["picture"]))
                     flash("Your Google account has been linked. Thank you!")
         except:
-            flash("Account Creation Failed")
+            flash("An unexpected error occurred while linking your account. Please try again later.")
             #if this fails logout and redirect home
             return redirect(authManager.LOGOUT_ROUTE)
-
 
 @application.route("/delete-user", methods=["GET"])
 @authManager.requireAuthentication
 def deleteUserHandler():
     """Deletes a user and redirects them home"""
     user = authManager.getUserData()
-    print("delete", user["id"], file = sys.stderr)
     if user:
         try:
             with dataSessionMgr.session_scope() as dbSession:
                 account = query.getUser(dbSession, user["id"])
                 if account:
                     dbSession.delete(account)
-                    flash("Account Deleted")
+                    flash("Your forum account has been deleted and unlinked from your Google account.")
         except:
-            flash("Account Deletion Failed")
+            flash("An unexpected error occurred while deleting your account. Please try again later.")
 
     return redirect(authManager.LOGOUT_ROUTE)
 
@@ -500,13 +499,11 @@ def logoutCallback():
     This is invoked when a user logs out, immediately before user context is destroyed.
     """
     user = authManager.getUserData()
-    print("User signed out: " + user["name"], file=sys.stderr)
-
 
 @application.route('/file-manager', methods=['GET'])
 @authManager.enableAuthentication
 def fileManagerGetHandler():
-
+    """renders the users file manager screen"""
     user = authManager.getUserData();
     if not user:
         return 401;
@@ -523,6 +520,7 @@ def fileManagerGetHandler():
 @application.route('/file-delete', methods=['POST'])
 @authManager.requireAuthentication
 def fileListDeleteHander():
+    """Deletes a list of files"""
     user = authManager.getUserData()
     fid = int(request.form['file'])
     id = user['id']
@@ -563,6 +561,7 @@ def fileListDeleteHander():
 @application.route('/file-list', methods=['GET'])
 @authManager.requireAuthentication
 def fileListGetHandler():
+    """Gives the list of files associated with current user"""
     user = authManager.getUserData()
 
     id = user['id']
@@ -583,6 +582,7 @@ def fileListGetHandler():
 @application.route('/file-list', methods=['POST'])
 @authManager.requireAuthentication
 def fileListPostHandler():
+    """Uploads a list of files to s3 and the dv"""
     user = authManager.getUserData()
 
     # Get the user session and file to upload
@@ -612,7 +612,7 @@ def fileListPostHandler():
                 checkFile = query.getFileByName(dbSession,id,filename)
                 checkFile = query.extractOutput(checkFile)
         except Exception as e:
-            flash("Something happen", e);
+            flash("We had an issue connecting to our storage, please try again", e);
             return e
 
         if checkFile is not None:
@@ -624,30 +624,25 @@ def fileListPostHandler():
         s3client.upload_fileobj(file, bucket_name, key, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
         url = "https://s3-us-west-2.amazonaws.com/condensation-forum/" + key
 
-        storeToDB(id, url, key, filename)
+        try:
+            with dataSessionMgr.session_scope() as dbSession:
+                user = query.getUser(dbSession, id)
+                file = schema.File(url=url, cloud_key=key, name=filename)
+                user.uploads.append(file)
+        except:
+            flash("We had an issue connecting to storage, please try again.")
+
 
         return redirect(request.url)
-    except Exception as e:
+    except Exception:
         flash("An unexpected error occurred while uploading your file. Things to try: "\
                  + "<br/> - Rename the file to something shorter"\
                  + "<br/> - Make sure the file size is under 1 megabyte"\
-                 + "<br/> - Make sure there are no special characters in the file name<br/><br/>", e);
+                 + "<br/> - Make sure there are no special characters in the file name<br/><br/>");
         return redirect(request.url)
 
     # Redirect to end the POST handling the redirect can be to the same route or somewhere else
     return redirect(request.url)
-
-
-def storeToDB(userID,url,key,filename):
-    """This method is used to store the data uploaded into DB"""
-    try:
-        with dataSessionMgr.session_scope() as dbSession:
-                 user = query.getUser(dbSession, userID)
-                 file = schema.File(url=url, cloud_key=key, name=filename)
-                 user.uploads.append(file)
-    except Exception as e:
-        flash("Something happen: ",e)
-        return e
 
 
 # Run Flask app now
