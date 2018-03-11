@@ -148,20 +148,27 @@ def newThreadHandler():
     user = authManager.getUserData()
     if form.validate_on_submit():
         tid = None
-        try:
-            with dataSessionMgr.session_scope() as dbSession:
-                user = query.getUser(dbSession, user["id"])
-                thread = schema.Thread(heading=form.heading.data, body=form.body.data)
-                user.threads.append(thread)
-                #commits current transactions so we can grab the generated id
-                dbSession.flush()
-                tid = thread.id
-            flash("Thread Created")
-            #redirect to the created thread view
-            return redirect(url_for("threadGetHandler", tid=tid))
-        except:
-            flash("Thread Creation Failed")
-            return redirect(url_for("indexGetHandler"))
+        #try:
+        with dataSessionMgr.session_scope() as dbSession:
+
+            # Collect a list of all file entities
+            fileEntries = json.loads(request.form["fileIds"])
+            print (fileEntries, file=sys.stderr)
+            files = []
+            for fileEntry in fileEntries:
+                files.append(query.getFileById(dbSession, fileEntry['id']))
+
+            user = query.getUser(dbSession, user["id"])
+            thread = schema.Thread(user=user, heading=form.heading.data, body=form.body.data, attachments=files)
+            #commits current transactions so we can grab the generated id
+            dbSession.flush()
+            tid = thread.id
+        flash("Thread Created")
+        #redirect to the created thread view
+        return redirect(url_for("threadGetHandler", tid=tid))
+        #except:
+            #flash("Thread Creation Failed")
+            #return redirect(url_for("indexGetHandler"))
 
     #error handling is done in the html forms
     user = authManager.getUserData()
@@ -200,11 +207,20 @@ def editThreadHandler(tid):
     if form.validate_on_submit():
         try:
             with dataSessionMgr.session_scope() as dbSession:
+
+                # Collect a list of all file entities
+                fileEntries = json.loads(request.form["fileIds"])
+                print (fileEntries, file=sys.stderr)
+                files = []
+                for fileEntry in fileEntries:
+                    files.append(query.getFileById(dbSession, fileEntry['id']))
+
                 thread = query.getThreadById(dbSession, tid)
                 if user["id"] != thread.user_id:
                     abort(403)
                 thread.heading = form.heading.data
                 thread.body = form.body.data
+                thread.attachments = files
             flash("Thread Updated")
             #redirect to the created thread view
             return redirect(url_for("threadGetHandler", tid=tid))
@@ -213,13 +229,19 @@ def editThreadHandler(tid):
             return redirect(url_for("indexGetHandler"))
 
     #populate with old data from forms
+    fileList = [];
     with dataSessionMgr.session_scope() as dbSession:
          thread = query.getThreadById(dbSession, tid)
          form.heading.data = thread.heading
          form.body.data = thread.body
+         for file in thread.attachments:
+            fileList.append({
+                'id': file.id,
+                'name': file.name
+            })
 
     #error handling is done in the html forms
-    rendered = editThreadTemplate.render(form=form, edit = True)
+    rendered = editThreadTemplate.render(form=form, edit = True, fileListAsString=json.dumps(fileList))
     return bodyTemplate.render(
             title="Edit Thread",
             body=rendered,
