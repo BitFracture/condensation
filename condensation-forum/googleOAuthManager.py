@@ -177,10 +177,10 @@ class GoogleOAuthManager(object):
         def newAuthFunc(*args, **kwargs):
             access_token = session.get('accessToken')
             account = None
-                
+
             if access_token is None:
                 session['userRedirect'] = request.url_rule.rule
-                flash("Please login to do that.")
+                flash("Please <a href='/login'>log in with Google</a> to create or edit threads and comments.")
                 return redirect("/")
             else:
                 self.__populateUserData()
